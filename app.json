@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "TerapiaFisica",
+    "slug": "TerapiaFisica",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./src/assets/splash-logo.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "development": true,
+    "splash": {
+      "image": "./src/assets/splash-logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#7469B6"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./src/assets/splash-logo.png",
+        "backgroundColor": "#7469B6"
+      }
+    },
+    "web": {
+      "favicon": "./src/assets/favicon.png"
+    },
+    "plugins": [
+      "react-native-video",
+      "expo-video"
+    ]
+  }
+}
