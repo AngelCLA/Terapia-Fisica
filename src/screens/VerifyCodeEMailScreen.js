@@ -1,39 +1,51 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
-    TextInput,
     StyleSheet,
-    Pressable,
-    Image,
-    Keyboard,
     TouchableWithoutFeedback,
+    Keyboard,
+    Image,
+    Pressable,
+    Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { initializeApp } from 'firebase/app';
+import { firebaseConfig } from '../../firebaseConfig';
 
-const VerifyCodePhoneScreen = ({ navigation }) => {
-    const inputCount = 6; // Número de inputs
-    const [codes, setCodes] = useState(Array(inputCount).fill('')); // Array de estados para los inputs
-    const inputsRef = useRef([]); // Referencias para los TextInput
+const VerifyEmailScreen = ({ navigation }) => {
+    const [loading, setLoading] = useState(false); // Estado para mostrar un spinner mientras se verifica el correo
+    const auth = getAuth(initializeApp(firebaseConfig)); // Inicializar Firebase
 
-    // Maneja cambios en el texto de un input específico
-    const handleChange = (text, index) => {
-        if (/^\d?$/.test(text)) { // Permite solo números o vacío
-            const updatedCodes = [...codes];
-            updatedCodes[index] = text;
-            setCodes(updatedCodes);
+    // Función para verificar si el correo electrónico está verificado
+    const checkEmailVerification = async () => {
+        setLoading(true); // Mostrar un estado de carga en el botón
+        const user = auth.currentUser;
 
-            // Salta al siguiente input si se ingresa un número
-            if (text !== '' && index < inputCount - 1) {
-                inputsRef.current[index + 1].focus();
+        if (user) {
+            try {
+                await user.reload(); // Recargar el usuario para obtener el estado más reciente
+                const updatedUser = auth.currentUser;
+
+                if (updatedUser.emailVerified) {
+                    setLoading(false); // Detener el estado de carga
+                    navigation.navigate('Register Data Email'); // Redirigir a la pantalla principal
+                } else {
+                    setLoading(false); // Detener el estado de cargax|
+                    Alert.alert(
+                        'Correo no verificado',
+                        'Por favor, verifica tu correo electrónico antes de continuar.'
+                    );
+                }
+            } catch (error) {
+                setLoading(false); // Detener el estado de carga
+                Alert.alert('Error', 'No se pudo verificar el correo electrónico.');
+                console.log('Error al recargar el usuario:', error);
             }
-        }
-    };
-
-    // Detecta la tecla Backspace para retroceder al input anterior
-    const handleKeyPress = (e, index) => {
-        if (e.nativeEvent.key === 'Backspace' && codes[index] === '' && index > 0) {
-            inputsRef.current[index - 1].focus();
+        } else {
+            // Si no hay usuario, redirigir al inicio de sesión
+            navigation.navigate('Inicio de sesión');
         }
     };
 
@@ -42,53 +54,20 @@ const VerifyCodePhoneScreen = ({ navigation }) => {
             <SafeAreaView style={styles.container}>
                 <Image source={require('../assets/email.png')} style={styles.contentImage} />
                 <View style={styles.content}>
-                    <Text style={styles.title}>Verificación</Text>
+                    <Text style={styles.title}>Verificación de Correo</Text>
                     <Text style={styles.indicacion}>
-                        Ingrese el código de 6 dígitos enviado al correo electrónico (correo@ejemplo.com)
+                        Por favor, verifica tu correo electrónico. Revisa tu bandeja de entrada y haz clic en el enlace de verificación.
                     </Text>
-                    <View style={styles.buttonContainer}>
-                        <View style={styles.phoneInputContainer}>
-                            {Array.from({ length: inputCount }).map((_, index) => (
-                                <TextInput
-                                    key={index}
-                                    ref={(ref) => (inputsRef.current[index] = ref)} // Asignar referencia
-                                    value={codes[index]} // Valor correspondiente del array
-                                    onChangeText={(text) => handleChange(text, index)} // Maneja cambios
-                                    onKeyPress={(e) => handleKeyPress(e, index)} // Detecta Backspace
-                                    placeholder={codes[index] === '' ? '-' : ''} // Desaparece el placeholder si hay texto
-                                    placeholderTextColor="#FFFFFF"
-                                    keyboardType="numeric"
-                                    style={[
-                                        styles.phoneInput,
-                                        { textAlignVertical: 'center' }, // Centra el cursor verticalmente
-                                    ]}
-                                    maxLength={1} // Limita a 1 carácter
-                                />
-                            ))}
-                        </View>
-                        <View style={styles.loginLinkContainer}>
-                            <Text style={styles.loginText}>¿No recibiste el código?</Text>
-                            <Text
-                                style={styles.loginLink}
-                                onPress={() => navigation.navigate('Reenviar Código')}
-                            >
-                                Reenviar
-                            </Text>
-                        </View>
-                        <Pressable
-                            style={styles.registerButton}
-                            accessibilityLabel="Registrarse"
-                            onPress={() => navigation.navigate('Register Data Email')}
-                        >
-                            <Text style={{ color: '#fff', fontSize: 24, fontWeight: 'bold' }}>
-                                Enviar código
-                            </Text>
-                        </Pressable>
-                    </View>
-                    <View style={styles.termsContainer}>
-                        <Text style={styles.termsText}>He leído y aceptado los</Text>
-                        <Text style={styles.termsLink}>Términos y condiciones</Text>
-                    </View>
+
+                    <Pressable
+                        style={[styles.verifyButton, loading && styles.verifyButtonDisabled]}
+                        onPress={checkEmailVerification}
+                        disabled={loading}
+                    >
+                        <Text style={styles.verifyButtonText}>
+                            {loading ? 'Verificando...' : 'Verificar Correo'}
+                        </Text>
+                    </Pressable>
                 </View>
             </SafeAreaView>
         </TouchableWithoutFeedback>
@@ -105,6 +84,7 @@ const styles = StyleSheet.create({
         flex: 1,
         width: '100%',
         justifyContent: 'center',
+        alignItems: 'center',
     },
     contentImage: {
         width: '60%',
@@ -120,82 +100,28 @@ const styles = StyleSheet.create({
         marginBottom: 10,
         textAlign: 'center',
     },
-    buttonContainer: {
-        width: '100%',
-        backgroundColor: '#fff',
-        alignItems: 'center',
-        marginTop: 30,
-        padding: 20,
-        paddingTop: 30,
-        borderRadius: 26,
-        borderColor: '#888888',
-        shadowColor: '#000',
-        shadowOpacity: 0.2,
-        shadowRadius: 10,
-        elevation: 5,
-    },
-    phoneInputContainer: {
-        width: '100%',
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 20,
-    },
-    phoneInput: {
-        width: 50,
-        height: 60,
-        textAlign: 'center',
-        backgroundColor: '#ABA9D9',
-        borderColor: '#ABA9D9',
-        borderWidth: 1,
-        borderRadius: 10,
-        fontSize: 24,
-        color: '#FFFFFF',
-    },
-    registerButton: {
-        width: '100%',
-        backgroundColor: '#7469B6',
-        paddingVertical: 14,
-        borderRadius: 10,
-        marginTop: 20,
-        marginBottom: 10,
-        alignItems: 'center',
-    },
-    termsContainer: {
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginTop: 10,
-    },
-    termsText: {
-        color: '#888888',
-        fontSize: 18,
-        fontWeight: 'bold',
-    },
-    termsLink: {
-        color: '#7469B6',
-        fontSize: 18,
-        fontWeight: 'bold',
-    },
-    loginLinkContainer: {
-        marginTop: 5,
-        alignItems: 'center',
-    },
-    loginText: {
-        color: '#535353',
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    loginLink: {
-        color: '#7469B6',
-        fontSize: 16,
-        fontWeight: 'bold',
-        marginTop: 10,
-    },
     indicacion: {
         fontSize: 16,
         textAlign: 'center',
         color: '#888888',
+        marginBottom: 20,
+    },
+    verifyButton: {
+        width: '80%',
+        backgroundColor: '#7469B6',
+        paddingVertical: 14,
+        borderRadius: 10,
+        marginTop: 20,
+        alignItems: 'center',
+    },
+    verifyButtonDisabled: {
+        backgroundColor: '#A9A9A9', // Color cuando el botón está deshabilitado
+    },
+    verifyButtonText: {
+        color: '#fff',
+        fontSize: 18,
+        fontWeight: 'bold',
     },
 });
 
-export default VerifyCodePhoneScreen;
+export default VerifyEmailScreen;
