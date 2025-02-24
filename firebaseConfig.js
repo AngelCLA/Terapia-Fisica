@@ -1,7 +1,7 @@
 // firebaseConfig.js
 import { initializeApp } from "firebase/app";
 import { getDatabase } from "firebase/database";
-import { sendEmailVerification } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
     apiKey: "AIzaSyAiK9Lpxefc-ZCFSxhXU2hUViQvGlI0Nl4",
@@ -21,3 +21,6 @@ const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 
 export { app, database };
+
+const db = getFirestore(app);
+export { db };

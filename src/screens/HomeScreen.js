@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, {useEffect, useState} from 'react';
 import {
     Image,
     Keyboard,
@@ -9,7 +9,8 @@ import {
     Text,
     TextInput,
     TouchableWithoutFeedback,
-    View
+    View,
+    ActivityIndicator
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {StatusBar} from 'expo-status-bar';
@@ -19,6 +20,10 @@ import {Dropdown} from 'react-native-element-dropdown';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 
 import VideoCard from '../components/VideoCard';
+
+import {getDoc, doc} from 'firebase/firestore';
+import {getAuth} from 'firebase/auth';
+import {db} from '../../firebaseConfig';
 
 // Definir el Tab.Navigator y las pantallas
 const Tab = createBottomTabNavigator();
@@ -37,7 +42,39 @@ const data = [
 const HomeScreen = ({navigation}) => {
     const [value, setValue] = useState(null);
     const [isFocus, setIsFocus] = useState(false);
+    const [userData, setUserData] = useState(null);
+    const [loading, setLoading] = useState(true);
 
+    useEffect(() => {
+        const fetchData = async () => {
+            const auth = getAuth();
+            const user = auth.currentUser;
+
+            if (user) {
+                try {
+                    const userDoc = await getDoc(doc(db, 'users', user.uid));
+                    if (userDoc.exists()) {
+                        setUserData(userDoc.data());
+                    } else {
+                        console.log('No se encontraron datos para este usuario.');
+                    }
+                } catch (error) {
+                    console.log('Error al recuperar los datos:', error);
+                } finally {
+                    setLoading(false);
+                }
+            } else {
+                console.log('No hay un usuario autenticado.');
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, []);
+
+    if (loading) {
+        return <ActivityIndicator size="large" color="#0000ff"/>;
+    }
     return (
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
             <SafeAreaProvider style={{flex: 1, backgroundColor: '#fff'}}>
@@ -47,7 +84,7 @@ const HomeScreen = ({navigation}) => {
                     <View style={styles.titleContainer}>
                         <View style={styles.textContainer}>
                             <Text style={{color: '#444444', fontSize: 20, fontWeight: '400'}}>👏 Bienvenido,</Text>
-                            <Text style={styles.title}>Armando Torres Fuertes</Text>
+                            <Text style={styles.title}>{userData.firstName}{' '}{userData.lastName}</Text>
                         </View>
                         <Image source={require('../assets/avatar2.png')} style={styles.image}/>
                     </View>
@@ -246,42 +283,65 @@ const HomeScreen = ({navigation}) => {
 };
 
 const ProfileScreen = ({navigation}) => {
+    const [userData, setUserData] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            const auth = getAuth();
+            const user = auth.currentUser;
+
+            if (user) {
+                try {
+                    const userDoc = await getDoc(doc(db, 'users', user.uid));
+                    if (userDoc.exists()) {
+                        setUserData(userDoc.data());
+                    } else {
+                        console.log('No se encontraron datos para este usuario.');
+                    }
+                } catch (error) {
+                    console.log('Error al recuperar los datos:', error);
+                } finally {
+                    setLoading(false);
+                }
+            } else {
+                console.log('No hay un usuario autenticado.');
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, []);
+
+    if (loading) {
+        return <ActivityIndicator size="large" color="#0000ff"/>;
+    }
+
     return (
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
             <SafeAreaView style={{flex: 1, backgroundColor: '#fff'}}>
                 <StatusBar style="auto"/>
                 <View style={styles.container}>
-                    <View style={{padding: 10, paddingVertical: 20, backgroundColor: '#EDF6FD', borderRadius: 10}}>
-                        <View style={styles.titleContainer}>
-                            <View style={styles.textContainer}>
-                                <Text style={{color: '#444444', fontSize: 20, fontWeight: '400'}}>👏 Bienvenido,</Text>
-                                <Text style={styles.title}>Juan Lopez</Text>
-                            </View>
-                            <Image source={require('../assets/avatar2.png')} style={styles.image}/>
+                    {/* Header */}
+                    <View style={styles.titleContainer}>
+                        <View style={styles.textContainer}>
+                            <Text style={{color: '#444444', fontSize: 20, fontWeight: '400'}}>👏 Bienvenido,</Text>
+                            <Text style={styles.title}>{userData.firstName}{' '}{userData.lastName}</Text>
                         </View>
-                        <View style={styles.inputTitleContainer}>
-                            <Text style={{
-                                color: '#333',
-                                fontSize: 28,
-                                fontWeight: '800',
-                                marginBottom: 15,
-                                width: '60%'
-                            }}>
-                                ¡Encuentra el ejercicio perfecto{' '}
-                                <Text style={{color: '#1089FF'}}>para ti</Text>!
-                            </Text>
-                            <Image source={require('../assets/yoga.png')}
-                                   style={{borderRadius: 10, width: '40%', height: '140'}}/>
-                        </View>
-                        <View style={styles.inputContainer}>
-                            <Ionicons name="search-outline" size={24} color="gray"/>
-                            <TextInput
-                                placeholder="Buscar"
-                                placeholderTextColor="#888888"
-                                style={styles.input}
-                            />
-                        </View>
+                        <Image source={require('../assets/avatar2.png')} style={styles.image}/>
                     </View>
+                        <View>
+                            <Text>Nombre: {userData?.firstName}</Text>
+                            <Text>Apellido: {userData?.lastName}</Text>
+                            <Text>Teléfono: {userData?.phone}</Text>
+                            <Text>Dirección: {userData?.address}</Text>
+                            <Text>Correo electrónico: {userData?.email}</Text>
+                            <Text>Genero: {userData?.genero}</Text>
+                            <Text>Edad: {userData?.edad}</Text>
+                            <Text>Peso: {userData?.peso}</Text>
+                            <Text>Estatura: {userData?.estatura}</Text>
+                            <Text>Padecimiento: {userData?.padecimiento}</Text>
+                        </View>
                 </View>
             </SafeAreaView>
         </TouchableWithoutFeedback>
@@ -462,4 +522,11 @@ const styles = StyleSheet.create({
         width: 20,
         height: 20,
     },
+    firstName: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#333',
+        marginBottom: 5,
+    },
+
 });

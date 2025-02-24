@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import {
     View,
     Text,
@@ -8,10 +8,66 @@ import {
     Image,
     Keyboard,
     TouchableWithoutFeedback,
+    Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { getAuth } from 'firebase/auth';
+import { initializeApp } from 'firebase/app';
+import { getFirestore, doc, setDoc } from 'firebase/firestore';
+import { firebaseConfig } from '../../firebaseConfig';
 
 const RegisterDataEmailScreen = ({ navigation }) => {
+    const [formData, setFormData] = useState({
+        firstName: '',
+        lastName: '',
+        phone: '',
+        address: '',
+        email: '',
+    });
+
+    // Inicializar Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // Manejar cambios en los inputs
+    const handleChange = (name, value) => {
+        setFormData((prev) => ({
+            ...prev,
+            [name]: value,
+        }));
+    };
+
+    // Guardar datos en Firestore
+    const saveUserData = async () => {
+        const user = auth.currentUser;
+
+        if (user) {
+            try {
+                // Combinar datos del formulario con el correo electrónico del usuario
+                const userData = {
+                    firstName: formData.firstName,
+                    lastName: formData.lastName,
+                    phone: formData.phone,
+                    address: formData.address,
+                    email: user.email, // Agregar el correo electrónico del usuario
+                };
+
+                console.log("Datos a guardar:", userData); // Depuración
+
+                // Guardar los datos en Firestore
+                await setDoc(doc(db, 'users', user.uid), userData);
+
+                console.log("Datos guardados correctamente en Firestore.");
+                navigation.navigate('Datos Fisicos', { personalData: userData });
+            } catch (error) {
+                console.log('Error al guardar los datos:', error);
+                Alert.alert('Error', 'No se pudieron guardar los datos. Inténtalo de nuevo.');
+            }
+        } else {
+            Alert.alert('Error', 'No se encontró un usuario autenticado.');
+        }
+    };
 
     return (
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -20,30 +76,45 @@ const RegisterDataEmailScreen = ({ navigation }) => {
                 <View style={styles.content}>
                     <View style={styles.buttonContainer}>
                         <Text style={styles.title}>Datos Personales</Text>
+
+                        {/* Mostrar el correo electrónico */}
+                        <Text style={styles.emailText}>
+                            Correo electrónico: {auth.currentUser?.email}
+                        </Text>
+
                         <TextInput
                             placeholder="Nombre(s)"
                             placeholderTextColor="#888888"
                             style={styles.inputLabels}
+                            value={formData.firstName}
+                            onChangeText={(text) => handleChange('firstName', text)}
                         />
                         <TextInput
                             placeholder="Apellido(s)"
                             placeholderTextColor="#888888"
                             style={styles.inputLabels}
+                            value={formData.lastName}
+                            onChangeText={(text) => handleChange('lastName', text)}
                         />
                         <TextInput
-                            placeholder="Telefono"
+                            placeholder="Teléfono"
                             placeholderTextColor="#888888"
                             style={styles.inputLabels}
+                            value={formData.phone}
+                            onChangeText={(text) => handleChange('phone', text)}
+                            keyboardType="phone-pad"
                         />
                         <TextInput
-                            placeholder="Direccion"
+                            placeholder="Dirección"
                             placeholderTextColor="#888888"
                             style={styles.inputLabels}
+                            value={formData.address}
+                            onChangeText={(text) => handleChange('address', text)}
                         />
                         <Pressable
                             style={styles.registerButton}
-                            accessibilityLabel="Registrarse"
-                            onPress={() => navigation.navigate('Datos Fisicos')}
+                            accessibilityLabel="Continuar"
+                            onPress={saveUserData}
                         >
                             <Text style={{ color: '#fff', fontSize: 24, fontWeight: 'bold' }}>
                                 Continuar
@@ -99,22 +170,15 @@ const styles = StyleSheet.create({
         shadowRadius: 10,
         elevation: 5,
     },
-    phoneInputContainer: {
+    inputLabels: {
         width: '100%',
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 20,
-    },
-    phoneInput: {
-        width: 50,
-        height: 60,
-        textAlign: 'center',
-        backgroundColor: '#ABA9D9',
-        borderColor: '#ABA9D9',
+        height: 50,
+        backgroundColor: '#fff',
+        borderColor: '#888888',
         borderWidth: 1,
         borderRadius: 10,
-        fontSize: 24,
-        color: '#FFFFFF',
+        padding: 10,
+        marginBottom: 20,
     },
     registerButton: {
         width: '100%',
@@ -141,30 +205,12 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
     },
-    loginLinkContainer: {
-        marginTop: 5,
-        alignItems: 'center',
-    },
-    loginText: {
-        color: '#535353',
-        fontSize: 16,
+    emailText: {
+        fontSize: 18,
         fontWeight: 'bold',
-    },
-    loginLink: {
         color: '#7469B6',
-        fontSize: 16,
-        fontWeight: 'bold',
-        marginTop: 10,
-    },
-    inputLabels: {
-        width: '100%',
-        height: 50,
-        backgroundColor: '#fff',
-        borderColor: '#888888',
-        borderWidth: 1,
-        borderRadius: 10,
-        padding: 10,
         marginBottom: 20,
+        textAlign: 'center',
     },
 });
 
