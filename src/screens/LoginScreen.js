@@ -1,4 +1,5 @@
 import React from 'react';
+import { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ImageBackground,
     View,
@@ -10,79 +11,121 @@ import { ImageBackground,
     TouchableWithoutFeedback } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 
+import {getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword} from 'firebase/auth';
+import {getDatabase} from '../../firebaseConfig.js';
+import {firebaseConfig} from '../../firebaseConfig.js';
+import {initializeApp} from 'firebase/app';
+
 const LoginScreen = ({ navigation }) => {
+
+    const [phone, setPhone] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    const handleCreateAccount = async () => {
+        createUserWithEmailAndPassword(auth, email, password)
+            .then((userCredential) => {
+                console.log('Creado usuario con éxito');
+                const user = userCredential.user;
+                console.log(user.email);
+            })
+            .catch((error) => {
+                console.log(error);
+            });
+    }
+
+    const handleSignIn = async () => {
+        signInWithEmailAndPassword(auth, email, password)
+            .then((userCredential) => {
+                console.log('Signed in');
+                const user = userCredential.user;
+                console.log(user.email);
+                navigation.navigate('Home');
+            })
+            .catch((error) => {
+                console.log(error);
+            });
+    }
+
     return (
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
-            <View style={styles.container}>
-                <ImageBackground
-                    source={require('../assets/loginScreen.png')}
-                    style={styles.contentImage}
-                >
-                </ImageBackground>
-                <View style={styles.content}>
-                    <View style={styles.buttonContainer}>
-                        <Text style={styles.title}>
-                            Inicia Sesión
-                        </Text>
-                        <TextInput
-                            placeholder="Correo electrónico o número de teléfono"
-                            placeholderTextColor="#888888"
-                            style={styles.inputLabels}
-                        />
-                        <TextInput
-                            placeholder="Contraseña"
-                            placeholderTextColor="#888888"
-                            style={styles.inputLabels}
-                        />
-                        <Text style={{ color: '#888888', fontSize: 16 }}>
-                            ¿Olvidaste tu contraseña? <Text style={{ color: '#0091FF' }} onPress={() => navigation.navigate('Recuperar contraseña')}>Reestablecer</Text>
-                        </Text>
-                        <Pressable
-                            style={styles.loginButton}
-                            accessibilityLabel={'Registrarse'}
-                            onPress={() => navigation.navigate('Registrarse')}
-                        >
-                            <Text style={{ color: '#fff', fontSize: 24, fontWeight: 'bold' }}>
-                                Iniciar Sesión
+            <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+                <View style={styles.container}>
+                    <ImageBackground
+                        source={require('../assets/loginScreen.png')}
+                        style={styles.contentImage}
+                    >
+                    </ImageBackground>
+                    <View style={styles.content}>
+                        <View style={styles.buttonContainer}>
+                            <Text style={styles.title}>
+                                Inicia Sesión
                             </Text>
-                        </Pressable>
-                        <Text style={{ color: '#888888', fontSize: 22, fontWeight: 'bold' }}>
-                            O
-                        </Text>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
-                            {/* Botón Google */}
+                            <TextInput
+                                onChangeText={(text) => setEmail(text)}
+                                placeholder="Correo electrónico o número de teléfono"
+                                placeholderTextColor="#888888"
+                                style={styles.inputLabels}
+                            />
+                            <TextInput
+                                onChangeText={(text) => setPassword(text)}
+                                placeholder="Contraseña"
+                                placeholderTextColor="#888888"
+                                style={styles.inputLabels}
+                            />
+                            <Text style={{ color: '#888888', fontSize: 16 }}>
+                                ¿Olvidaste tu contraseña? <Text style={{ color: '#0091FF' }} onPress={() => navigation.navigate('Recuperar contraseña')}>Reestablecer</Text>
+                            </Text>
                             <Pressable
-                                style={styles.buttonGoogle}
-                                onPress={() => console.log('Botón Google presionado')}
-                            >
-                                <FontAwesome name="google" size={32} color="#535353" />
-                            </Pressable>
+                                style={styles.loginButton}
+                                accessibilityLabel={'Home'}
+                                onPress={handleSignIn}
 
-                            {/* Botón Facebook */}
-                            <Pressable
-                                style={styles.buttonFacebook}
-                                onPress={() => console.log('Botón Facebook presionado')}
                             >
-                                <FontAwesome name="facebook" size={32} color="white" />
+                                <Text style={{ color: '#fff', fontSize: 24, fontWeight: 'bold' }}>
+                                    Iniciar Sesión
+                                </Text>
                             </Pressable>
+                            <Text style={{ color: '#888888', fontSize: 22, fontWeight: 'bold' }}>
+                                O
+                            </Text>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
+                                {/* Botón Google */}
+                                <Pressable
+                                    style={styles.buttonGoogle}
+                                    onPress={() => console.log('Botón Google presionado')}
+                                >
+                                    <FontAwesome name="google" size={32} color="#535353" />
+                                </Pressable>
+
+                                {/* Botón Facebook */}
+                                <Pressable
+                                    style={styles.buttonFacebook}
+                                    onPress={() => console.log('Botón Facebook presionado')}
+                                >
+                                    <FontAwesome name="facebook" size={32} color="white" />
+                                </Pressable>
+                            </View>
+                            <Text style={{ color: '#535353', fontSize: 16, fontWeight: 'bold', marginTop: 15 }}>
+                                ¿Aun no tienes cuenta?
+                            </Text>
+                            <Text style={{ color: '#0091FF', fontSize: 16, fontWeight: 'bold', }} onPress={() => navigation.navigate('Registrarse')}>Registrate aqui</Text>
                         </View>
-                        <Text style={{ color: '#535353', fontSize: 16, fontWeight: 'bold', marginTop: 15 }}>
-                            ¿Aun no tienes cuenta?
-                        </Text>
-                        <Text style={{ color: '#0091FF', fontSize: 16, fontWeight: 'bold', }} onPress={() => navigation.navigate('Registrarse')}>Registrate aqui</Text>
-                    </View>
-                    <View style={{ flexDirection: 'column', justifyContent: 'center', alignItems: 'center', marginTop: 10 }}>
-                        <Text style={{ color: '#888888', fontSize: 18, fontWeight: 'bold' }}>
-                            He leido y aceptado los
-                        </Text>
-                        <Text style={{ color: '#7469B6', fontSize: 18, fontWeight: 'bold' }}>
-                            Términos y condiciones
-                        </Text>
+                        <View style={{ flexDirection: 'column', justifyContent: 'center', alignItems: 'center', marginTop: 10 }}>
+                            <Text style={{ color: '#888888', fontSize: 18, fontWeight: 'bold' }}>
+                                He leido y aceptado los
+                            </Text>
+                            <Text style={{ color: '#7469B6', fontSize: 18, fontWeight: 'bold' }}>
+                                Términos y condiciones
+                            </Text>
+                        </View>
                     </View>
                 </View>
-            </View>
-        </SafeAreaView>
+            </SafeAreaView>
         </TouchableWithoutFeedback>
     );
 };
