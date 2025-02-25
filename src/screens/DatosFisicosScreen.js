@@ -5,6 +5,7 @@ import {
     Keyboard,
     Pressable,
     SafeAreaView,
+    ScrollView,
     StatusBar,
     StyleSheet,
     Text,
@@ -13,6 +14,7 @@ import {
     TouchableWithoutFeedback,
     View,
 } from 'react-native';
+import {SafeAreaProvider} from 'react-native-safe-area-context';
 import Slider from '@react-native-community/slider';
 import { Picker } from '@react-native-picker/picker';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -32,9 +34,79 @@ const DatosFisicosScreen = () => {
         peso: '',
         estatura: '',
         padecimiento: '',
+        nivelActividad: null,
     });
     const [selectedFirstPicker, setSelectedFirstPicker] = useState('0');
     const [selectedSecondPicker, setSelectedSecondPicker] = useState('0');
+
+    // Lista de niveles de actividad física
+    const activityLevels = [
+        {
+            id: 'sedentario',
+            title: 'Sedentario',
+            description: 'Poco o ningún ejercicio, trabajo de escritorio',
+            icon: require('../assets/clipboard.png'), // Puedes reemplazar con íconos propios
+        },
+        {
+            id: 'ligero',
+            title: 'Ligero',
+            description: 'Ejercicio ligero 1-3 días por semana',
+            icon: require('../assets/clipboard.png'),
+        },
+        {
+            id: 'moderado',
+            title: 'Moderado',
+            description: 'Ejercicio moderado 3-5 días por semana',
+            icon: require('../assets/clipboard.png'),
+        },
+        {
+            id: 'activo',
+            title: 'Muy Activo',
+            description: 'Ejercicio intenso 6-7 días por semana',
+            icon: require('../assets/clipboard.png'),
+        },
+        {
+            id: 'extremo',
+            title: 'Extremadamente Activo',
+            description: 'Ejercicio muy intenso, trabajo físico o atleta',
+            icon: require('../assets/clipboard.png'),
+        },
+    ];
+
+    // Lista de padecimientos
+    const items = [
+        { id: 1, label: 'Padecimiento 1', image: require('../assets/clipboard.png') },
+        { id: 2, label: 'Padecimiento 2', image: require('../assets/clipboard.png') },
+        { id: 3, label: 'Padecimiento 3', image: require('../assets/clipboard.png') },
+        { id: 4, label: 'Padecimiento 4', image: require('../assets/clipboard.png') },
+        { id: 5, label: 'Padecimiento 5', image: require('../assets/clipboard.png') },
+        { id: 6, label: 'Padecimiento 6', image: require('../assets/clipboard.png') },
+        { id: 7, label: 'Padecimiento 7', image: require('../assets/clipboard.png') },
+        { id: 8, label: 'Padecimiento 8', image: require('../assets/clipboard.png') },
+        { id: 9, label: 'Padecimiento 9', image: require('../assets/clipboard.png') },
+        { id: 10, label: 'Padecimiento 10', image: require('../assets/clipboard.png') },
+    ];
+
+    // Función para obtener el nombre del padecimiento según ID
+    const getPadecimientoName = (id) => {
+        const padecimiento = items.find(item => item.id === id);
+        return padecimiento ? padecimiento.label : 'No especificado';
+    };
+
+    // Función para obtener texto descriptivo del nivel de actividad
+    const getNivelActividadText = (nivel) => {
+        const actividad = activityLevels.find(item => item.id === nivel);
+        return actividad ? actividad.title : 'No especificado';
+    };
+
+    // Función para formatear estatura
+    const formatEstatura = (estaturaCm) => {
+        if (!estaturaCm) return 'No especificada';
+        const cm = parseInt(estaturaCm, 10);
+        const metros = Math.floor(cm / 100);
+        const centimetros = cm % 100;
+        return `${metros}.${centimetros < 10 ? '0' + centimetros : centimetros} m`;
+    };
 
     const renderGeneroView = () => (
         <>
@@ -164,19 +236,6 @@ const DatosFisicosScreen = () => {
         );
     };
 
-    const items = [
-        { id: 1, label: 'Padecimiento 1', image: require('../assets/clipboard.png') },
-        { id: 2, label: 'Padecimiento 2', image: require('../assets/clipboard.png') },
-        { id: 3, label: 'Padecimiento 3', image: require('../assets/clipboard.png') },
-        { id: 4, label: 'Padecimiento 4', image: require('../assets/clipboard.png') },
-        { id: 5, label: 'Padecimiento 5', image: require('../assets/clipboard.png') },
-        { id: 6, label: 'Padecimiento 6', image: require('../assets/clipboard.png') },
-        { id: 7, label: 'Padecimiento 7', image: require('../assets/clipboard.png') },
-        { id: 8, label: 'Padecimiento 8', image: require('../assets/clipboard.png') },
-        { id: 9, label: 'Padecimiento 9', image: require('../assets/clipboard.png') },
-        { id: 10, label: 'Padecimiento 10', image: require('../assets/clipboard.png') },
-    ];
-
     const renderPatologiaView = () => (
         <View style={[styles.containerPatologias]}>
             <Text style={styles.title}>
@@ -212,26 +271,203 @@ const DatosFisicosScreen = () => {
         </View>
     );
 
+    // Nueva vista: Nivel de Actividad Física
+    const renderActividadView = () => (
+        <View style={styles.containerActividad}>
+            <Text style={styles.title}>¿Cuál es tu nivel de actividad física?</Text>
+
+            <View style={styles.activityOptionsContainer}>
+                {activityLevels.map((activity) => (
+                    <TouchableOpacity
+                        key={activity.id}
+                        style={[
+                            styles.activityOption,
+                            formData.nivelActividad === activity.id && styles.activitySelected,
+                        ]}
+                        onPress={() => setFormData((prev) => ({ ...prev, nivelActividad: activity.id }))}
+                    >
+                        <Image source={activity.icon} style={styles.activityIcon} />
+                        <View style={styles.activityTextContainer}>
+                            <Text style={[
+                                styles.activityTitle,
+                                formData.nivelActividad === activity.id && styles.textSelected
+                            ]}>
+                                {activity.title}
+                            </Text>
+                            <Text style={[
+                                styles.activityDescription,
+                                formData.nivelActividad === activity.id && styles.textSelected
+                            ]}>
+                                {activity.description}
+                            </Text>
+                        </View>
+                        <View
+                            style={[
+                                styles.radioCircle,
+                                formData.nivelActividad === activity.id && styles.radioSelected,
+                            ]}
+                        />
+                    </TouchableOpacity>
+                ))}
+            </View>
+        </View>
+    );
+
+    // Nueva vista: Resumen de todos los datos
+    const renderResumenView = () => {
+        // Combinar datos personales y físicos
+        const allData = {
+            ...personalData, // Datos personales
+            ...formData,     // Datos físicos
+        };
+
+        return (
+            <SafeAreaProvider style={{flex: 1, backgroundColor: '#fff'}}>
+                <StatusBar style="auto"/>
+                    <ScrollView contentContainerStyle={{flexGrow: 1, paddingBottom: 20}}>
+                        <Text style={styles.title}>Resumen de tus datos</Text>
+
+                        <View style={styles.card}>
+                            <Text style={styles.sectionTitle}>Datos Personales</Text>
+                            <View style={styles.dataRow}>
+                                <Text style={styles.dataLabel}>Nombre:</Text>
+                                <Text style={styles.dataValue}>{allData.firstName || 'No especificado'}</Text>
+                            </View>
+                            <View style={styles.dataRow}>
+                                <Text style={styles.dataLabel}>Apellido:</Text>
+                                <Text style={styles.dataValue}>{allData.lastName || 'No especificado'}</Text>
+                            </View>
+                            <View style={styles.dataRow}>
+                                <Text style={styles.dataLabel}>Email:</Text>
+                                <Text style={styles.dataValue}>{allData.email || 'No especificado'}</Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.card}>
+                            <Text style={styles.sectionTitle}>Datos Físicos</Text>
+
+                            <View style={styles.iconDataRow}>
+                                <Image
+                                    source={allData.genero === 'Masculino'
+                                        ? require('../assets/AvatarHombre.png')
+                                        : require('../assets/AvatarMujer.png')}
+                                    style={styles.smallIcon}
+                                />
+                                <View style={styles.dataRowFlex}>
+                                    <Text style={styles.dataLabel}>Género:</Text>
+                                    <Text style={styles.dataValue}>{allData.genero || 'No especificado'}</Text>
+                                </View>
+                            </View>
+
+                            <View style={styles.iconDataRow}>
+                                <Image source={require('../assets/bascula.png')} style={styles.smallIcon} />
+                                <View style={styles.dataRowFlex}>
+                                    <Text style={styles.dataLabel}>Edad:</Text>
+                                    <Text style={styles.dataValue}>{allData.edad ? `${allData.edad} años` : 'No especificada'}</Text>
+                                </View>
+                            </View>
+
+                            <View style={styles.iconDataRow}>
+                                <Image source={require('../assets/bascula.png')} style={styles.smallIcon} />
+                                <View style={styles.dataRowFlex}>
+                                    <Text style={styles.dataLabel}>Peso:</Text>
+                                    <Text style={styles.dataValue}>{allData.peso ? `${allData.peso} kg` : 'No especificado'}</Text>
+                                </View>
+                            </View>
+
+                            <View style={styles.iconDataRow}>
+                                <Image source={require('../assets/bascula.png')} style={styles.smallIcon} />
+                                <View style={styles.dataRowFlex}>
+                                    <Text style={styles.dataLabel}>Estatura:</Text>
+                                    <Text style={styles.dataValue}>{formatEstatura(allData.estatura)}</Text>
+                                </View>
+                            </View>
+                        </View>
+
+                        <View style={styles.card}>
+                            <Text style={styles.sectionTitle}>Información Médica</Text>
+                            <View style={styles.iconDataRow}>
+                                <Image source={require('../assets/clipboard.png')} style={styles.smallIcon} />
+                                <View style={styles.dataRowFlex}>
+                                    <Text style={styles.dataLabel}>Padecimiento:</Text>
+                                    <Text style={styles.dataValue}>{getPadecimientoName(allData.padecimiento)}</Text>
+                                </View>
+                            </View>
+                        </View>
+
+                        <View style={styles.card}>
+                            <Text style={styles.sectionTitle}>Actividad Física</Text>
+                            <View style={styles.iconDataRow}>
+                                <Image
+                                    source={require('../assets/clipboard.png')}
+                                    style={styles.smallIcon}
+                                />
+                                <View style={styles.dataRowFlex}>
+                                    <Text style={styles.dataLabel}>Nivel:</Text>
+                                    <Text style={styles.dataValue}>{getNivelActividadText(allData.nivelActividad)}</Text>
+                                </View>
+                            </View>
+                        </View>
+
+                        <View style={styles.buttonContainer}>
+                            <Pressable
+                                style={styles.editButton}
+                                onPress={() => setCurrentView('Genero')}
+                            >
+                                <Text style={styles.editButtonText}>Editar</Text>
+                            </Pressable>
+                        </View>
+                    </ScrollView>
+                </SafeAreaProvider>
+        );
+    };
+
     const handleNext = () => {
         switch (currentView) {
             case 'Genero':
-                setCurrentView('Edad');
+                if (!formData.genero) {
+                    alert('Por favor, selecciona un género antes de continuar.');
+                } else {
+                    setCurrentView('Edad');
+                }
                 break;
             case 'Edad':
-                setCurrentView('Peso');
+                if (!formData.edad) {
+                    alert('Por favor, indica tu edad antes de continuar.');
+                } else {
+                    setCurrentView('Peso');
+                }
                 break;
             case 'Peso':
-                setCurrentView('Estatura');
+                if (!formData.peso) {
+                    alert('Por favor, indica tu peso antes de continuar.');
+                } else {
+                    setCurrentView('Estatura');
+                }
                 break;
             case 'Estatura':
-                setCurrentView('Patologia');
+                if (!formData.estatura) {
+                    alert('Por favor, indica tu estatura antes de continuar.');
+                } else {
+                    setCurrentView('Patologia');
+                }
                 break;
             case 'Patologia':
                 if (!formData.padecimiento) {
                     alert('Por favor, selecciona una patología antes de continuar.');
                 } else {
-                    handleSaveData();
+                    setCurrentView('Actividad');
                 }
+                break;
+            case 'Actividad':
+                if (!formData.nivelActividad) {
+                    alert('Por favor, selecciona un nivel de actividad antes de continuar.');
+                } else {
+                    setCurrentView('Resumen');
+                }
+                break;
+            case 'Resumen':
+                handleSaveData();
                 break;
         }
     };
@@ -274,15 +510,28 @@ const DatosFisicosScreen = () => {
                     {currentView === 'Peso' && renderPesoView()}
                     {currentView === 'Estatura' && renderEstaturaView()}
                     {currentView === 'Patologia' && renderPatologiaView()}
+                    {currentView === 'Actividad' && renderActividadView()}
+                    {currentView === 'Resumen' && renderResumenView()}
 
-                    <Pressable
-                        style={styles.registerButton}
-                        onPress={handleNext}
-                    >
-                        <Text style={styles.buttonText}>
-                            {currentView === 'Patologia' ? 'Finalizar' : 'Continuar'}
-                        </Text>
-                    </Pressable>
+                    {currentView !== 'Resumen' && (
+                        <Pressable
+                            style={styles.registerButton}
+                            onPress={handleNext}
+                        >
+                            <Text style={styles.buttonText}>
+                                {currentView === 'Actividad' ? 'Ver Resumen' : 'Continuar'}
+                            </Text>
+                        </Pressable>
+                    )}
+
+                    {currentView === 'Resumen' && (
+                        <Pressable
+                            style={styles.registerButton}
+                            onPress={handleSaveData}
+                        >
+                            <Text style={styles.buttonText}>Finalizar</Text>
+                        </Pressable>
+                    )}
                 </View>
             </SafeAreaView>
         </TouchableWithoutFeedback>
@@ -455,6 +704,124 @@ const styles = StyleSheet.create({
         width: 100,
         height: 100,
         marginBottom: 10,
+    },
+
+    // Estilos para la vista de Actividad
+    containerActividad: {
+        flex: 1,
+        marginTop: StatusBar.currentHeight || 0,
+    },
+    activityOptionsContainer: {
+        width: '100%',
+    },
+    activityOption: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        backgroundColor: '#EBEBFF',
+        borderRadius: 10,
+        marginBottom: 16,
+        shadowColor: '#000',
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
+        elevation: 3,
+    },
+    activitySelected: {
+        backgroundColor: '#ABA9D9',
+    },
+    activityIcon: {
+        width: 50,
+        height: 50,
+        marginRight: 16,
+    },
+    activityTextContainer: {
+        flex: 1,
+    },
+    activityTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#666666',
+        marginBottom: 4,
+    },
+    activityDescription: {
+        fontSize: 14,
+        color: '#888888',
+    },
+    textSelected: {
+        color: '#FFFFFF',
+    },
+
+    // Estilos para la vista de Resumen
+    scrollContent: {
+        paddingBottom: 20,
+    },
+    card: {
+        backgroundColor: '#EBEBFF',
+        borderRadius: 10,
+        padding: 16,
+        marginBottom: 20,
+        shadowColor: '#000',
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
+        elevation: 3,
+    },
+    sectionTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#7469B6',
+        marginBottom: 16,
+    },
+    dataRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingVertical: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: '#dedede',
+    },
+    iconDataRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: '#dedede',
+    },
+    dataRowFlex: {
+        flex: 1,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginLeft: 12,
+    },
+    dataLabel: {
+        fontSize: 16,
+        color: '#666666',
+        fontWeight: '500',
+    },
+    dataValue: {
+        fontSize: 16,
+        color: '#444444',
+        fontWeight: 'bold',
+    },
+    smallIcon: {
+        width: 30,
+        height: 30,
+    },
+    buttonContainer: {
+        marginTop: 20,
+        marginBottom: 40,
+    },
+    editButton: {
+        backgroundColor: '#EBEBFF',
+        paddingVertical: 14,
+        borderRadius: 10,
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#7469B6',
+    },
+    editButtonText: {
+        color: '#7469B6',
+        fontSize: 20,
+        fontWeight: 'bold',
+        textAlign: 'center',
     },
 });
 

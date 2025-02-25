@@ -44,11 +44,13 @@ const HomeScreen = ({navigation}) => {
     const [isFocus, setIsFocus] = useState(false);
     const [userData, setUserData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [currentUser, setCurrentUser] = useState(null); // Add this line to track the auth user
 
     useEffect(() => {
         const fetchData = async () => {
             const auth = getAuth();
             const user = auth.currentUser;
+            setCurrentUser(user); // Save the user to state
 
             if (user) {
                 try {
@@ -72,6 +74,9 @@ const HomeScreen = ({navigation}) => {
         fetchData();
     }, []);
 
+    // Now you can safely use currentUser
+    const displayName = userData ? userData.firstName : 'Guest';
+
     if (loading) {
         return <ActivityIndicator size="large" color="#0000ff"/>;
     }
@@ -84,7 +89,11 @@ const HomeScreen = ({navigation}) => {
                     <View style={styles.titleContainer}>
                         <View style={styles.textContainer}>
                             <Text style={{color: '#444444', fontSize: 20, fontWeight: '400'}}>👏 Bienvenido,</Text>
-                            <Text style={styles.title}>{userData.firstName}{' '}{userData.lastName}</Text>
+                            {userData ? (
+                                <Text style={styles.title}>{userData.firstName}{' '}{userData.lastName}</Text>
+                            ) : (
+                                <Text style={styles.title}>Guest</Text>
+                            )}
                         </View>
                         <Image source={require('../assets/avatar2.png')} style={styles.image}/>
                     </View>
@@ -290,6 +299,7 @@ const ProfileScreen = ({navigation}) => {
         const fetchData = async () => {
             const auth = getAuth();
             const user = auth.currentUser;
+
 
             if (user) {
                 try {
