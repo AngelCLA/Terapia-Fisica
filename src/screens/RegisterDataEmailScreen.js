@@ -22,6 +22,8 @@ import { getFirestore, doc, setDoc } from 'firebase/firestore';
 import { firebaseConfig } from '../../firebaseConfig';
 import { useFocusEffect } from '@react-navigation/native';
 
+const user = getAuth().currentUser;
+
 const RegisterDataEmailScreen = ({ navigation }) => {
     const [formData, setFormData] = useState({
         firstName: '',

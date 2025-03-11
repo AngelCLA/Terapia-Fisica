@@ -11,6 +11,7 @@ import {
     TouchableOpacity,
     Keyboard,
     TouchableWithoutFeedback,
+    Alert,
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -27,6 +28,7 @@ const RegisterPhoneScreen = ({ navigation }) => {
     const [phone, setPhone] = useState('');
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedCountry, setSelectedCountry] = useState(countries[0]);
+    const [termsAccepted, setTermsAccepted] = useState(false);
 
     const formatPhoneNumber = (value) => {
         const numbers = value.replace(/\D/g, '');
@@ -40,6 +42,23 @@ const RegisterPhoneScreen = ({ navigation }) => {
         if (input.length <= 10) {
             setPhone(formatPhoneNumber(input));
         }
+    };
+
+    const handleSendCode = () => {
+        // Validar número de teléfono
+        const phoneDigits = phone.replace(/\D/g, '');
+        if (phoneDigits.length < 10) {
+            Alert.alert('Número inválido', 'Por favor ingresa un número de teléfono válido');
+            return;
+        }
+
+        // Aquí normalmente enviarías un código de verificación al número de teléfono
+        // Por ahora, solo navegaremos a la pantalla de verificación
+        navigation.navigate('Verificacion de Codigo', {
+            phoneNumber: phone,
+            countryCode: selectedCountry.prefix,
+            countryFlag: selectedCountry.flag
+        });
     };
 
     return (
@@ -75,16 +94,22 @@ const RegisterPhoneScreen = ({ navigation }) => {
                             />
                         </View>
                         <Pressable
-                            style={styles.registerButton}
-                            onPress={() => navigation.navigate('Verificacion de Codigo')}
+                            style={[
+                                styles.registerButton,
+                                { opacity: phone.replace(/\D/g, '').length < 10 ? 0.7 : 1 }
+                            ]}
+                            onPress={handleSendCode}
                         >
                             <Text style={styles.registerButtonText}>Enviar código</Text>
                         </Pressable>
                     </View>
-                    <View style={styles.termsContainer}>
+                    <TouchableOpacity
+                        style={styles.termsContainer}
+                        onPress={() => setTermsAccepted(!termsAccepted)}
+                    >
                         <Text style={styles.termsText}>He leído y aceptado los</Text>
                         <Text style={styles.termsLink}>Términos y condiciones</Text>
-                    </View>
+                    </TouchableOpacity>
                 </View>
 
                 <Modal visible={modalVisible} animationType="slide" transparent={true}>

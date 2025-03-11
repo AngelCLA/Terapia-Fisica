@@ -1,5 +1,5 @@
 import React from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ImageBackground,
     View,
@@ -17,6 +17,7 @@ import {getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword} fro
 import {getDatabase} from '../../firebaseConfig.js';
 import {firebaseConfig} from '../../firebaseConfig.js';
 import {initializeApp} from 'firebase/app';
+import { configureGoogleSignIn, signInWithGoogle } from '../../GoogleAuthService';
 
 const LoginScreen = ({ navigation }) => {
 
@@ -24,10 +25,16 @@ const LoginScreen = ({ navigation }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [googleLoading, setGoogleLoading] = useState(false);
 
     // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
+
+    // Configura Google Sign-In al cargar el componente
+    useEffect(() => {
+        configureGoogleSignIn();
+    }, []);
 
     const handleCreateAccount = async () => {
         createUserWithEmailAndPassword(auth, email, password)
@@ -105,6 +112,17 @@ const LoginScreen = ({ navigation }) => {
             });
     }
 
+    const handleGoogleSignIn = async () => {
+        setGoogleLoading(true);
+        try {
+            await signInWithGoogle(navigation);
+        } catch (error) {
+            console.log('Error manejado en LoginScreen:', error);
+        } finally {
+            setGoogleLoading(false);
+        }
+    }
+
     return (
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
             <SafeAreaProvider style={{ flex: 1, backgroundColor: '#fff' }}>
@@ -162,10 +180,15 @@ const LoginScreen = ({ navigation }) => {
                             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
                                 {/* Botón Google */}
                                 <Pressable
-                                    style={styles.buttonGoogle}
-                                    onPress={() => console.log('Botón Google presionado')}
+                                    style={[styles.buttonGoogle, googleLoading && styles.buttonDisabled]}
+                                    onPress={handleGoogleSignIn}
+                                    disabled={googleLoading || loading}
                                 >
-                                    <FontAwesome name="google" size={32} color="#535353" />
+                                    {googleLoading ? (
+                                        <ActivityIndicator size="small" color="#535353" />
+                                    ) : (
+                                        <FontAwesome name="google" size={32} color="#535353" />
+                                    )}
                                 </Pressable>
 
                                 {/* Botón Facebook */}
@@ -244,6 +267,9 @@ const styles = StyleSheet.create({
     },
     loginButtonDisabled: {
         backgroundColor: '#a99ee0',
+    },
+    buttonDisabled: {
+        opacity: 0.7,
     },
     buttonLoadingContainer: {
         flexDirection: 'row',

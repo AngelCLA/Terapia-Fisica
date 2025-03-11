@@ -33,8 +33,8 @@ const DatosFisicosScreen = () => {
         edad: '',
         peso: '',
         estatura: '',
-        padecimiento: '',
-        nivelActividad: null,
+        //padecimiento: '',
+        //nivelActividad: null,
     });
     const [selectedFirstPicker, setSelectedFirstPicker] = useState('0');
     const [selectedSecondPicker, setSelectedSecondPicker] = useState('0');
@@ -236,6 +236,7 @@ const DatosFisicosScreen = () => {
         );
     };
 
+    // Esta vista se mantiene pero no se usa en el flujo actual
     const renderPatologiaView = () => (
         <View style={[styles.containerPatologias]}>
             <Text style={styles.title}>
@@ -271,7 +272,7 @@ const DatosFisicosScreen = () => {
         </View>
     );
 
-    // Nueva vista: Nivel de Actividad Física
+    // Esta vista se mantiene pero no se usa en el flujo actual
     const renderActividadView = () => (
         <View style={styles.containerActividad}>
             <Text style={styles.title}>¿Cuál es tu nivel de actividad física?</Text>
@@ -324,101 +325,108 @@ const DatosFisicosScreen = () => {
         return (
             <SafeAreaProvider style={{flex: 1, backgroundColor: '#fff'}}>
                 <StatusBar style="auto"/>
-                    <ScrollView contentContainerStyle={{flexGrow: 1, paddingBottom: 20}}>
-                        <Text style={styles.title}>Resumen de tus datos</Text>
+                <ScrollView contentContainerStyle={{flexGrow: 1, paddingBottom: 20}}>
+                    <Text style={styles.title}>Resumen de tus datos</Text>
 
-                        <View style={styles.card}>
-                            <Text style={styles.sectionTitle}>Datos Personales</Text>
-                            <View style={styles.dataRow}>
-                                <Text style={styles.dataLabel}>Nombre:</Text>
-                                <Text style={styles.dataValue}>{allData.firstName || 'No especificado'}</Text>
-                            </View>
-                            <View style={styles.dataRow}>
-                                <Text style={styles.dataLabel}>Apellido:</Text>
-                                <Text style={styles.dataValue}>{allData.lastName || 'No especificado'}</Text>
-                            </View>
-                            <View style={styles.dataRow}>
-                                <Text style={styles.dataLabel}>Email:</Text>
-                                <Text style={styles.dataValue}>{allData.email || 'No especificado'}</Text>
+                    <View style={styles.card}>
+                        <Text style={styles.sectionTitle}>Datos Personales</Text>
+                        <View style={styles.dataRow}>
+                            <Text style={styles.dataLabel}>Nombre:</Text>
+                            <Text style={styles.dataValue}>{allData.firstName || 'No especificado'}</Text>
+                        </View>
+                        <View style={styles.dataRow}>
+                            <Text style={styles.dataLabel}>Apellido:</Text>
+                            <Text style={styles.dataValue}>{allData.lastName || 'No especificado'}</Text>
+                        </View>
+                        <View style={styles.dataRow}>
+                            <Text style={styles.dataLabel}>Email:</Text>
+                            <Text style={styles.dataValue}>{allData.email || 'No especificado'}</Text>
+                        </View>
+                        <View style={styles.dataRow}>
+                            <Text style={styles.dataLabel}>Teléfono:</Text>
+                            <Text style={styles.dataValue}>{allData.phone || 'No especificado'}</Text>
+                        </View>
+                    </View>
+
+                    <View style={styles.card}>
+                        <Text style={styles.sectionTitle}>Datos Físicos</Text>
+
+                        <View style={styles.iconDataRow}>
+                            <Image
+                                source={allData.genero === 'Masculino'
+                                    ? require('../assets/AvatarHombre.png')
+                                    : require('../assets/AvatarMujer.png')}
+                                style={styles.smallIcon}
+                            />
+                            <View style={styles.dataRowFlex}>
+                                <Text style={styles.dataLabel}>Género:</Text>
+                                <Text style={styles.dataValue}>{allData.genero || 'No especificado'}</Text>
                             </View>
                         </View>
 
-                        <View style={styles.card}>
-                            <Text style={styles.sectionTitle}>Datos Físicos</Text>
-
-                            <View style={styles.iconDataRow}>
-                                <Image
-                                    source={allData.genero === 'Masculino'
-                                        ? require('../assets/AvatarHombre.png')
-                                        : require('../assets/AvatarMujer.png')}
-                                    style={styles.smallIcon}
-                                />
-                                <View style={styles.dataRowFlex}>
-                                    <Text style={styles.dataLabel}>Género:</Text>
-                                    <Text style={styles.dataValue}>{allData.genero || 'No especificado'}</Text>
-                                </View>
-                            </View>
-
-                            <View style={styles.iconDataRow}>
-                                <Image source={require('../assets/bascula.png')} style={styles.smallIcon} />
-                                <View style={styles.dataRowFlex}>
-                                    <Text style={styles.dataLabel}>Edad:</Text>
-                                    <Text style={styles.dataValue}>{allData.edad ? `${allData.edad} años` : 'No especificada'}</Text>
-                                </View>
-                            </View>
-
-                            <View style={styles.iconDataRow}>
-                                <Image source={require('../assets/bascula.png')} style={styles.smallIcon} />
-                                <View style={styles.dataRowFlex}>
-                                    <Text style={styles.dataLabel}>Peso:</Text>
-                                    <Text style={styles.dataValue}>{allData.peso ? `${allData.peso} kg` : 'No especificado'}</Text>
-                                </View>
-                            </View>
-
-                            <View style={styles.iconDataRow}>
-                                <Image source={require('../assets/bascula.png')} style={styles.smallIcon} />
-                                <View style={styles.dataRowFlex}>
-                                    <Text style={styles.dataLabel}>Estatura:</Text>
-                                    <Text style={styles.dataValue}>{formatEstatura(allData.estatura)}</Text>
-                                </View>
+                        <View style={styles.iconDataRow}>
+                            <Image source={require('../assets/bascula.png')} style={styles.smallIcon} />
+                            <View style={styles.dataRowFlex}>
+                                <Text style={styles.dataLabel}>Edad:</Text>
+                                <Text style={styles.dataValue}>{allData.edad ? `${allData.edad} años` : 'No especificada'}</Text>
                             </View>
                         </View>
 
-                        <View style={styles.card}>
-                            <Text style={styles.sectionTitle}>Información Médica</Text>
-                            <View style={styles.iconDataRow}>
-                                <Image source={require('../assets/clipboard.png')} style={styles.smallIcon} />
-                                <View style={styles.dataRowFlex}>
-                                    <Text style={styles.dataLabel}>Padecimiento:</Text>
-                                    <Text style={styles.dataValue}>{getPadecimientoName(allData.padecimiento)}</Text>
-                                </View>
+                        <View style={styles.iconDataRow}>
+                            <Image source={require('../assets/bascula.png')} style={styles.smallIcon} />
+                            <View style={styles.dataRowFlex}>
+                                <Text style={styles.dataLabel}>Peso:</Text>
+                                <Text style={styles.dataValue}>{allData.peso ? `${allData.peso} kg` : 'No especificado'}</Text>
                             </View>
                         </View>
 
-                        <View style={styles.card}>
-                            <Text style={styles.sectionTitle}>Actividad Física</Text>
-                            <View style={styles.iconDataRow}>
-                                <Image
-                                    source={require('../assets/clipboard.png')}
-                                    style={styles.smallIcon}
-                                />
-                                <View style={styles.dataRowFlex}>
-                                    <Text style={styles.dataLabel}>Nivel:</Text>
-                                    <Text style={styles.dataValue}>{getNivelActividadText(allData.nivelActividad)}</Text>
-                                </View>
+                        <View style={styles.iconDataRow}>
+                            <Image source={require('../assets/bascula.png')} style={styles.smallIcon} />
+                            <View style={styles.dataRowFlex}>
+                                <Text style={styles.dataLabel}>Estatura:</Text>
+                                <Text style={styles.dataValue}>{formatEstatura(allData.estatura)}</Text>
                             </View>
                         </View>
+                    </View>
 
-                        <View style={styles.buttonContainer}>
-                            <Pressable
-                                style={styles.editButton}
-                                onPress={() => setCurrentView('Genero')}
-                            >
-                                <Text style={styles.editButtonText}>Editar</Text>
-                            </Pressable>
+
+                    {/* Estas secciones se mantienen pero con valores por defecto
+                    <View style={styles.card}>
+                        <Text style={styles.sectionTitle}>Información Médica</Text>
+                        <View style={styles.iconDataRow}>
+                            <Image source={require('../assets/clipboard.png')} style={styles.smallIcon} />
+                            <View style={styles.dataRowFlex}>
+                                <Text style={styles.dataLabel}>Padecimiento:</Text>
+                                <Text style={styles.dataValue}>No especificado</Text>
+                            </View>
                         </View>
-                    </ScrollView>
-                </SafeAreaProvider>
+                    </View>
+
+                    <View style={styles.card}>
+                        <Text style={styles.sectionTitle}>Actividad Física</Text>
+                        <View style={styles.iconDataRow}>
+                            <Image
+                                source={require('../assets/clipboard.png')}
+                                style={styles.smallIcon}
+                            />
+                            <View style={styles.dataRowFlex}>
+                                <Text style={styles.dataLabel}>Nivel:</Text>
+                                <Text style={styles.dataValue}>No especificado</Text>
+                            </View>
+                        </View>
+                    </View>
+                    */}
+
+                    <View style={styles.buttonContainer}>
+                        <Pressable
+                            style={styles.editButton}
+                            onPress={() => setCurrentView('Genero')}
+                        >
+                            <Text style={styles.editButtonText}>Editar</Text>
+                        </Pressable>
+                    </View>
+                </ScrollView>
+            </SafeAreaProvider>
         );
     };
 
@@ -449,17 +457,25 @@ const DatosFisicosScreen = () => {
                 if (!formData.estatura) {
                     alert('Por favor, indica tu estatura antes de continuar.');
                 } else {
-                    setCurrentView('Patologia');
+                    // Cambiamos el flujo para ir directamente al resumen, saltando Patologia y Actividad
+                    setCurrentView('Resumen');
+
+                    // Establecemos valores por defecto para los campos que estamos saltando
+                    setFormData(prev => ({
+                        ...prev,
+                        padecimiento: '',
+                        nivelActividad: null
+                    }));
                 }
                 break;
-            case 'Patologia':
+            case 'Patologia': // Mantenemos esta lógica por si en el futuro se vuelve a habilitar
                 if (!formData.padecimiento) {
                     alert('Por favor, selecciona una patología antes de continuar.');
                 } else {
                     setCurrentView('Actividad');
                 }
                 break;
-            case 'Actividad':
+            case 'Actividad': // Mantenemos esta lógica por si en el futuro se vuelve a habilitar
                 if (!formData.nivelActividad) {
                     alert('Por favor, selecciona un nivel de actividad antes de continuar.');
                 } else {
@@ -509,6 +525,7 @@ const DatosFisicosScreen = () => {
                     {currentView === 'Edad' && renderEdadView()}
                     {currentView === 'Peso' && renderPesoView()}
                     {currentView === 'Estatura' && renderEstaturaView()}
+                    {/* Mantenemos las referencias a las vistas deshabilitadas, pero nunca se mostrarán en el flujo actual */}
                     {currentView === 'Patologia' && renderPatologiaView()}
                     {currentView === 'Actividad' && renderActividadView()}
                     {currentView === 'Resumen' && renderResumenView()}

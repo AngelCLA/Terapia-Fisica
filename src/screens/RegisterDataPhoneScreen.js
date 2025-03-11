@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import {
     View,
     Text,
@@ -8,10 +8,61 @@ import {
     Image,
     Keyboard,
     TouchableWithoutFeedback,
+    Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const RegisterDataPhoneScreen = ({ navigation }) => {
+const RegisterDataPhoneScreen = ({ navigation, route }) => {
+    const { phoneNumber, countryCode } = route.params || {
+        phoneNumber: '000-000-0000',
+        countryCode: '+52'
+    };
+
+    const [userData, setUserData] = useState({
+        nombre: '',
+        apellido: '',
+        email: '',
+        direccion: '',
+    });
+
+    const handleChange = (field, value) => {
+        setUserData({
+            ...userData,
+            [field]: value
+        });
+    };
+
+    const validateEmail = (email) => {
+        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return re.test(email);
+    };
+
+    const handleContinue = () => {
+        // Validar campos
+        if (!userData.nombre.trim()) {
+            Alert.alert('Campo requerido', 'Por favor ingresa tu nombre');
+            return;
+        }
+        if (!userData.apellido.trim()) {
+            Alert.alert('Campo requerido', 'Por favor ingresa tu apellido');
+            return;
+        }
+        if (!userData.email.trim() || !validateEmail(userData.email)) {
+            Alert.alert('Email inválido', 'Por favor ingresa un correo electrónico válido');
+            return;
+        }
+        if (!userData.direccion.trim()) {
+            Alert.alert('Campo requerido', 'Por favor ingresa tu dirección');
+            return;
+        }
+
+        // Navegar a la siguiente pantalla con todos los datos del usuario
+        navigation.navigate('Datos Fisicos', {
+            ...userData,
+            phoneNumber,
+            countryCode
+        });
+    };
 
     return (
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -22,28 +73,41 @@ const RegisterDataPhoneScreen = ({ navigation }) => {
                         <Text style={styles.title}>Datos Personales</Text>
                         <TextInput
                             placeholder="Nombre(s)"
+                            value={userData.nombre}
+                            onChangeText={(text) => handleChange('nombre', text)}
                             placeholderTextColor="#888888"
                             style={styles.inputLabels}
                         />
                         <TextInput
                             placeholder="Apellido(s)"
+                            value={userData.apellido}
+                            onChangeText={(text) => handleChange('apellido', text)}
                             placeholderTextColor="#888888"
                             style={styles.inputLabels}
                         />
                         <TextInput
                             placeholder="Correo electrónico"
+                            value={userData.email}
+                            onChangeText={(text) => handleChange('email', text)}
                             placeholderTextColor="#888888"
+                            keyboardType="email-address"
                             style={styles.inputLabels}
+                            autoCapitalize="none"
                         />
                         <TextInput
-                            placeholder="Direccion"
+                            placeholder="Dirección"
+                            value={userData.direccion}
+                            onChangeText={(text) => handleChange('direccion', text)}
                             placeholderTextColor="#888888"
                             style={styles.inputLabels}
                         />
                         <Pressable
-                            style={styles.registerButton}
-                            accessibilityLabel="Registrarse"
-                            onPress={() => navigation.navigate('Datos Fisicos')}
+                            style={[
+                                styles.registerButton,
+                                { opacity: Object.values(userData).some(val => !val.trim()) ? 0.7 : 1 }
+                            ]}
+                            accessibilityLabel="Continuar"
+                            onPress={handleContinue}
                         >
                             <Text style={{ color: '#fff', fontSize: 24, fontWeight: 'bold' }}>
                                 Continuar

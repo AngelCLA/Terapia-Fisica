@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { useState, useEffect } from 'react';
 import {
     ImageBackground,
     View,
@@ -16,10 +17,12 @@ import { useNavigation } from '@react-navigation/native';
 import { getAuth, createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
 import { initializeApp } from 'firebase/app';
 import { firebaseConfig } from '../../firebaseConfig.js';
+import { configureGoogleSignIn, signInWithGoogle, signUp } from "../../GoogleAuthService"; // Importar signUp
 
 const RegisterScreen = () => {
     const navigation = useNavigation();
     const [loading, setLoading] = useState(false);
+    const [googleLoading, setGoogleLoading] = useState(false);
     const [formData, setFormData] = useState({
         email: '',
         password: '',
@@ -35,6 +38,10 @@ const RegisterScreen = () => {
     // Inicializar Firebase
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
+
+    useEffect(() => {
+        configureGoogleSignIn();
+    }, []);
 
     // Validación de email
     const validateEmail = (email) => {
@@ -105,13 +112,23 @@ const RegisterScreen = () => {
             // Enviar el correo de verificación
             await sendEmailVerification(user);
 
+            // Guardar datos adicionales en Firestore
+            await signUp(user.uid, user.email, {
+                // Aquí puedes agregar más datos del usuario si es necesario
+                name: '', // Por ejemplo, el nombre del usuario
+                lastName: '', // Apellido del usuario
+            });
+
             Alert.alert(
                 'Registro exitoso',
                 'Se ha enviado un correo de verificación a tu dirección de correo electrónico.',
                 [
                     {
                         text: 'OK',
-                        onPress: () => navigation.navigate('Verificacion de Codigo EMail', { user }),
+                        onPress: () => navigation.navigate('Register Data Email', {
+                            uid: user.uid,
+                            email: user.email
+                        })
                     },
                 ]
             );
@@ -138,6 +155,17 @@ const RegisterScreen = () => {
             Alert.alert('Error', errorMessage);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleGoogleSignIn = async () => {
+        setGoogleLoading(true);
+        try {
+            await signInWithGoogle(navigation);
+        } catch (error) {
+            console.log('Error manejado en LoginScreen:', error);
+        } finally {
+            setGoogleLoading(false);
         }
     };
 
@@ -203,18 +231,35 @@ const RegisterScreen = () => {
                         </Pressable>
 
                         <Text style={styles.orText}>O</Text>
-
-                        <View style={styles.socialButtonsContainer}>
+                        <View style={styles.termsContainer}>
                             <Pressable
-                                style={styles.buttonGoogle}
-                                onPress={() => {
-                                    console.log('Botón celular presionado');
-                                    navigation.navigate('Registro con Celular');
-                                }}
+                                style={styles.termsCheckbox}
+                                onPress={() => setAcceptedTerms(!acceptedTerms)}
                             >
-                                <FontAwesome name="phone" size={32} color="#535353" />
+                                <FontAwesome
+                                    name={acceptedTerms ? 'check-square-o' : 'square-o'}
+                                    size={24}
+                                    color="#7469B6"
+                                />
                             </Pressable>
-
+                            <Text style={styles.termsText}>
+                                He leído y acepto los{' '}
+                                <Text style={styles.termsLink}>Términos y condiciones</Text>
+                            </Text>
+                        </View>
+                        <View style={styles.socialButtonsContainer}>
+                            {/* Botón Google */}
+                            <Pressable
+                                style={[styles.buttonGoogle, googleLoading && styles.buttonDisabled]}
+                                onPress={handleGoogleSignIn}
+                                disabled={googleLoading || loading}
+                            >
+                                {googleLoading ? (
+                                    <ActivityIndicator size="small" color="#535353" />
+                                ) : (
+                                    <FontAwesome name="google" size={32} color="#535353" />
+                                )}
+                            </Pressable>
                             <Pressable
                                 style={styles.buttonFacebook}
                                 onPress={() => {
@@ -225,12 +270,7 @@ const RegisterScreen = () => {
                                 <FontAwesome name="facebook" size={32} color="white" />
                             </Pressable>
 
-                            <Pressable
-                                style={styles.buttonGoogle}
-                                onPress={() => console.log('Botón Google presionado')}
-                            >
-                                <FontAwesome name="google" size={32} color="#535353" />
-                            </Pressable>
+
                         </View>
 
                         <View style={styles.loginLinkContainer}>
@@ -242,23 +282,6 @@ const RegisterScreen = () => {
                                 Inicia sesión
                             </Text>
                         </View>
-                    </View>
-
-                    <View style={styles.termsContainer}>
-                        <Pressable
-                            style={styles.termsCheckbox}
-                            onPress={() => setAcceptedTerms(!acceptedTerms)}
-                        >
-                            <FontAwesome
-                                name={acceptedTerms ? 'check-square-o' : 'square-o'}
-                                size={24}
-                                color="#7469B6"
-                            />
-                        </Pressable>
-                        <Text style={styles.termsText}>
-                            He leído y acepto los{' '}
-                            <Text style={styles.termsLink}>Términos y condiciones</Text>
-                        </Text>
                     </View>
                 </View>
             </View>
@@ -348,7 +371,7 @@ const styles = StyleSheet.create({
         color: '#888888',
         fontSize: 22,
         fontWeight: 'bold',
-        marginVertical: 10,
+        //marginVertical: 10,
     },
     socialButtonsContainer: {
         flexDirection: 'row',
@@ -400,7 +423,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        marginTop: 20,
+       // marginTop: 20,
         paddingHorizontal: 20,
     },
     termsCheckbox: {

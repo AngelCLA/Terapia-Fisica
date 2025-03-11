@@ -18,7 +18,7 @@ const categories = [
 
 const CACHE_KEY = 'youtube_videos_cache';
 const CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 horas en milisegundos
-const API_KEY = 'AIzaSyAOXwmfmBNYYNIRJJpn8x8ePgI6_yfQWEU';
+const API_KEY = 'AIzaSyCHS1WP1pkc536u2iIwK3UrEaUsw9faVQA';
 const CHANNEL_ID = 'UCNJWe9sVinPkGd1KqGP45cA';
 
 const normalizeString = (str) => str.toLowerCase().replace(/\s+/g, '');
