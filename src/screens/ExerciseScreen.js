@@ -16,48 +16,50 @@ const categories = [
     "Meditación"
 ];
 
-const normalizeString = (str) => str.toLowerCase().replace(/\s+/g, '');
-
-const ExerciseScreen = ({navigation}) => {
-    const [selectedCategory, setSelectedCategory] = useState("Todos");
+const ExerciseScreen = ({navigation, route}) => {
+    // Verificar si se pasó una categoría por parámetro en la ruta
+    const initialCategory = route.params?.selectedCategory || "Todos";
+    const [selectedCategory, setSelectedCategory] = useState(initialCategory);
     const [videos, setVideos] = useState([]);
+    const [filteredVideos, setFilteredVideos] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [nextPageToken, setNextPageToken] = useState(null);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-    // Helper to load videos for the selected category
-    // Modificación del loadVideos para cargar todos los videos una sola vez
+    // Cargar videos solo una vez al inicio
     const loadVideos = useCallback(async (refresh = false) => {
         if (refresh) {
             setIsLoading(true);
         } else if (isLoadingMore) {
-            return; // Prevent multiple pagination requests
+            return; // Prevenir múltiples solicitudes de paginación
         }
 
-        // Only set loading more if we're paginating
+        // Sólo establecer loadingMore si estamos paginando
         if (!refresh && nextPageToken) {
             setIsLoadingMore(true);
         }
 
         try {
+            // Usar el servicio optimizado
             const result = await YouTubeService.getVideos({
-                maxResults: 10,
-                category: null, // No filtrar en servidor
-                cacheKey: `exercise_all`,
-                forceRefresh: refresh,
-                pageToken: refresh ? null : nextPageToken
+                maxResults: 20, // Cargar más videos de una vez
+                pageToken: refresh ? null : nextPageToken,
+                forceRefresh: refresh
             });
 
             if (result.videos) {
                 if (refresh || !nextPageToken) {
-                    // Replace videos on fresh load
+                    // Reemplazar videos en carga inicial
                     setVideos(result.videos);
+                    filterVideosByCategory(result.videos, selectedCategory);
                 } else {
-                    // Append videos when paginating
-                    setVideos(prev => [...prev, ...result.videos]);
+                    // Anexar videos al paginar
+                    const updatedVideos = [...videos, ...result.videos];
+                    setVideos(updatedVideos);
+                    filterVideosByCategory(updatedVideos, selectedCategory);
                 }
 
-                // Update next page token for pagination
+                // Actualizar token para paginación
                 setNextPageToken(result.nextPageToken);
             }
         } catch (error) {
@@ -66,35 +68,41 @@ const ExerciseScreen = ({navigation}) => {
             setIsLoading(false);
             setIsLoadingMore(false);
         }
-    }, [nextPageToken, isLoadingMore]);
+    }, [nextPageToken, isLoadingMore, selectedCategory]);
 
-// Y luego modificarías el useEffect para no pasar la categoría:
+    // Filtrar videos basados en la categoría seleccionada (filtrado del lado del cliente)
+    const filterVideosByCategory = useCallback((videosToFilter, category) => {
+        if (category === "Todos") {
+            setFilteredVideos(videosToFilter);
+        } else {
+            const normalizeString = (str) => str.toLowerCase().replace(/\s+/g, '');
+            const normalizedCategory = normalizeString(category);
+
+            const filtered = videosToFilter.filter((video) =>
+                (video.snippet.tags || []).some((tag) =>
+                    normalizeString(tag) === normalizedCategory
+                )
+            );
+            setFilteredVideos(filtered);
+        }
+    }, []);
+
+    // Cargar videos al iniciar
     useEffect(() => {
         loadVideos(true);
     }, []);
 
-// Y eliminarías este useEffect:
-// useEffect(() => {
-//     if (selectedCategory) {
-//         loadVideos(selectedCategory, true);
-//     }
-// }, [selectedCategory]);
+    // Cuando cambie la categoría, filtrar los videos ya cargados
+    useEffect(() => {
+        filterVideosByCategory(videos, selectedCategory);
+    }, [selectedCategory, filterVideosByCategory]);
 
-    // Handle "reached end of list" to load more
+    // Manejar "llegó al final de la lista" para cargar más
     const handleEndReached = () => {
         if (nextPageToken && !isLoadingMore && !isLoading) {
             loadVideos();
         }
     };
-
-    // Filter videos based on selected category (for client-side filtering)
-    const filteredVideos = selectedCategory === "Todos"
-        ? videos
-        : videos.filter((video) =>
-            (video.snippet.tags || []).some((tag) =>
-                normalizeString(tag) === normalizeString(selectedCategory)
-            )
-        );
 
     return (
         <SafeAreaProvider>
@@ -111,7 +119,7 @@ const ExerciseScreen = ({navigation}) => {
                             handleEndReached();
                         }
                     }}
-                    scrollEventThrottle={400} // Throttle scroll events
+                    scrollEventThrottle={400} // Limitar eventos de scroll
                 >
                     <View style={styles.tagsContainer}>
                         {categories.map((category, index) => (
@@ -153,7 +161,7 @@ const ExerciseScreen = ({navigation}) => {
                                     />
                                 ))}
 
-                                {/* Loading indicator for pagination */}
+                                {/* Indicador de carga para paginación */}
                                 {isLoadingMore && (
                                     <View style={styles.paginationLoader}>
                                         <ActivityIndicator size="small" color="#0000ff" />

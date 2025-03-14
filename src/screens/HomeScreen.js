@@ -21,6 +21,7 @@ import {SafeAreaProvider, useSafeAreaInsets} from 'react-native-safe-area-contex
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import VideoCard from '../components/VideoCard';
+import YouTubeService from '../services/YoutubeService';
 
 import {getDoc, doc} from 'firebase/firestore';
 import {getAuth} from 'firebase/auth';
@@ -39,12 +40,6 @@ const data = [
     {label: 'Pilates', value: 'Pilates'},
     {label: 'Meditación', value: 'Meditación'},
 ];
-
-// Constants for YouTube API
-const CACHE_KEY = 'featured_youtube_videos_cache';
-const CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 horas en milisegundos
-const API_KEY = 'AIzaSyCHS1WP1pkc536u2iIwK3UrEaUsw9faVQA';
-const CHANNEL_ID = 'UCNJWe9sVinPkGd1KqGP45cA'; // Your channel ID
 
 const HomeScreen = ({navigation}) => {
     const insets = useSafeAreaInsets();
@@ -85,100 +80,34 @@ const HomeScreen = ({navigation}) => {
         loadFeaturedVideos();
     }, []);
 
-    // Format duration for YouTube ISO 8601 duration format
-    const formatDuration = (isoDuration) => {
-        const match = isoDuration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
-        const hours = (match[1] || '').replace('H', '');
-        const minutes = (match[2] || '').replace('M', '');
-        const seconds = (match[3] || '').replace('S', '');
-        return hours ? `${hours}:${minutes.padStart(2, '0')}:${seconds.padStart(2, '0')}` : `${minutes || '0'}:${seconds.padStart(2, '0')}`;
-    };
-
-    // Fetch videos directly from channel
-    const fetchChannelVideos = async () => {
-        try {
-            // Check cache first
-            const cachedVideos = await loadFromCache();
-            if (cachedVideos) {
-                return cachedVideos;
-            }
-
-            // If no cache, fetch from API
-            const response = await fetch(
-                `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${CHANNEL_ID}&maxResults=5&type=video&order=relevance&key=${API_KEY}`
-            );
-            const data = await response.json();
-
-            if (!data.items) return [];
-
-            const videoIds = data.items.map((video) => video.id.videoId).join(',');
-
-            const detailsResponse = await fetch(
-                `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id=${videoIds}&key=${API_KEY}`
-            );
-            const detailsData = await detailsResponse.json();
-
-            if (!detailsData.items) return [];
-
-            const formattedVideos = detailsData.items.map((video) => ({
-                ...video,
-                formattedDuration: formatDuration(video.contentDetails.duration),
-            }));
-
-            // Save to cache
-            await saveToCache(formattedVideos);
-
-            return formattedVideos;
-        } catch (error) {
-            console.error('Error fetching videos:', error);
-            return [];
-        }
-    };
-
-    // Cache management functions
-    const saveToCache = async (videosData) => {
-        try {
-            const cacheData = {
-                videos: videosData,
-                timestamp: Date.now(),
-            };
-            await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
-        } catch (error) {
-            console.error('Error saving to cache:', error);
-        }
-    };
-
-    const loadFromCache = async () => {
-        try {
-            const cachedData = await AsyncStorage.getItem(CACHE_KEY);
-            if (cachedData) {
-                const {videos, timestamp} = JSON.parse(cachedData);
-                const isExpired = Date.now() - timestamp > CACHE_EXPIRY;
-
-                if (!isExpired) {
-                    return videos;
-                }
-            }
-            return null;
-        } catch (error) {
-            console.error('Error loading from cache:', error);
-            return null;
-        }
-    };
-
-    // Load featured videos for the home screen - now directly from your channel
+    // Cargar videos destacados para la pantalla de inicio
     const loadFeaturedVideos = async () => {
         setVideosLoading(true);
         try {
-            const channelVideos = await fetchChannelVideos();
-            if (channelVideos && channelVideos.length > 0) {
-                setFeaturedVideos(channelVideos);
+            // Usar el servicio optimizado para cargar los videos
+            // No forzamos la actualización, siempre usamos caché si está disponible
+            const result = await YouTubeService.getVideos({
+                maxResults: 5,  // Solo necesitamos unos pocos para la página principal
+                forceRefresh: false  // Usar caché si está disponible
+            });
+
+            if (result && result.videos && result.videos.length > 0) {
+                setFeaturedVideos(result.videos);
             }
         } catch (error) {
             console.error('Error loading featured videos:', error);
         } finally {
             setVideosLoading(false);
         }
+    };
+
+    // Función para manejar la selección de categoría desde el dropdown
+    const handleCategorySelect = (item) => {
+        setValue(item.value);
+        setIsFocus(false);
+        console.log('Ha elegido el "' + item.value + '"');
+        // Navegar a la pantalla de ejercicios con la categoría seleccionada
+        navigation.navigate('ExerciseScreen', { selectedCategory: item.value });
     };
 
     if (loading) {
@@ -249,11 +178,7 @@ const HomeScreen = ({navigation}) => {
                                         value={value}
                                         onFocus={() => setIsFocus(true)}
                                         onBlur={() => setIsFocus(false)}
-                                        onChange={(item) => {
-                                            setValue(item.value);
-                                            setIsFocus(false);
-                                            console.log('Ha elegido el "' + item.value + '"');
-                                        }}
+                                        onChange={handleCategorySelect}
                                         renderLeftIcon={() => (
                                             <Ionicons
                                                 name="search-outline"

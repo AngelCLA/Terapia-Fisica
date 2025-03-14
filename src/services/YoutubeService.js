@@ -1,11 +1,11 @@
-// YouTubeService.js
+// YouTubeService.js - Versión optimizada
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Configuración de múltiples claves API de YouTube
 const YOUTUBE_API_KEYS = [
     'AIzaSyCHS1WP1pkc536u2iIwK3UrEaUsw9faVQA',
     'AIzaSyAOXwmfmBNYYNIRJJpn8x8ePgI6_yfQWEU',
-    'YOUR_YOUTUBE_API_KEY_3' // Puedes agregar tantas como necesites
+    'AIzaSyCgDbVMY3OGNd4q5TEJ2sypxXhUw8U4ZNw' // Puedes agregar tantas como necesites
 ];
 
 // URL base de la API de YouTube
@@ -19,6 +19,10 @@ let currentApiKeyIndex = 0;
 
 // Registra qué claves API han excedido su cuota diaria
 const apiQuotaExceeded = {};
+
+// Constantes para caché
+const CACHE_MAIN_DATA = 'youtube_videos_main_cache';
+const CACHE_EXPIRY = 7 * 24 * 60 * 60 * 1000; // 7 días en milisegundos (aumentamos el tiempo de caché)
 
 class YouTubeService {
     // Método para cambiar a la siguiente clave API disponible
@@ -80,32 +84,76 @@ class YouTubeService {
         }
     }
 
-    // Método principal para obtener videos con rotación de API keys
+    // MÉTODO PRINCIPAL PARA OBTENER VIDEOS
     static async getVideos(options = {}) {
         // Cargar el estado de las API keys al inicio
         await this.loadApiKeyStatus();
 
-        const { forceRefresh = false, cacheKey, maxResults = 10, category = null, pageToken = null } = options;
+        const {
+            forceRefresh = false,
+            cacheKey = CACHE_MAIN_DATA,
+            maxResults = 30, // Aumentado para tener más videos en una sola carga
+            category = null,
+            pageToken = null
+        } = options;
 
-        // Intentar cargar desde caché si no se fuerza actualización
-        if (!forceRefresh && cacheKey) {
-            try {
-                const cachedData = await AsyncStorage.getItem(`video_cache_${cacheKey}`);
-                if (cachedData) {
-                    const { data, timestamp } = JSON.parse(cachedData);
-                    const cacheAge = Date.now() - timestamp;
+        // 1. OPTIMIZACIÓN PRINCIPAL: Intentar usar caché global primero
+        try {
+            const mainCacheData = await AsyncStorage.getItem(CACHE_MAIN_DATA);
+            if (mainCacheData && !forceRefresh) {
+                const { data, timestamp } = JSON.parse(mainCacheData);
+                const cacheAge = Date.now() - timestamp;
 
-                    // Usar caché si tiene menos de 24 horas
-                    if (cacheAge < 24 * 60 * 60 * 1000) {
-                        console.log(`Usando datos en caché para: ${cacheKey}`);
-                        return data;
+                // Usar caché si tiene menos de X días (extendemos periodo)
+                if (cacheAge < CACHE_EXPIRY) {
+                    console.log(`Usando datos en caché principal`);
+
+                    // Si hay pageToken, manejamos la paginación desde la caché
+                    if (pageToken) {
+                        // Encontrar dónde comenzar en nuestros datos cacheados
+                        const startIndex = data.videos.findIndex(v => v.id === pageToken);
+                        if (startIndex >= 0 && startIndex + 1 < data.videos.length) {
+                            // Simular paginación desde la caché
+                            return {
+                                videos: data.videos.slice(startIndex + 1, startIndex + 1 + maxResults),
+                                nextPageToken: startIndex + 1 + maxResults < data.videos.length ?
+                                    data.videos[startIndex + 1 + maxResults].id : null
+                            };
+                        }
                     }
+
+                    // Si hay categoría, filtramos localmente
+                    if (category && category !== "Todos") {
+                        const normalizeString = (str) => str.toLowerCase().replace(/\s+/g, '');
+                        const normalizedCategory = normalizeString(category);
+
+                        const filteredVideos = data.videos.filter(video =>
+                            (video.snippet.tags || []).some(tag =>
+                                normalizeString(tag) === normalizedCategory
+                            )
+                        );
+
+                        // Devolver videos filtrados con paginación simulada
+                        return {
+                            videos: filteredVideos.slice(0, maxResults),
+                            nextPageToken: filteredVideos.length > maxResults ?
+                                filteredVideos[maxResults].id : null
+                        };
+                    }
+
+                    // Caso normal: devolver primeros videos de caché
+                    return {
+                        videos: data.videos.slice(0, maxResults),
+                        nextPageToken: data.videos.length > maxResults ?
+                            data.videos[maxResults].id : null
+                    };
                 }
-            } catch (error) {
-                console.warn('Error al acceder a la caché:', error);
             }
+        } catch (error) {
+            console.warn('Error al acceder a la caché principal:', error);
         }
 
+        // 2. Si llegamos aquí, necesitamos hacer llamada a la API
         // Máximo número de reintentos entre API keys
         const maxRetries = YOUTUBE_API_KEYS.length;
         let retryCount = 0;
@@ -113,14 +161,16 @@ class YouTubeService {
 
         while (retryCount < maxRetries) {
             try {
-                // Hay dos opciones para obtener videos de un canal específico:
+                // OPTIMIZACIÓN: Aumentamos maxResults para obtener más videos en una sola llamada
+                // esto reduce las llamadas futuras con paginación
+                const apiMaxResults = 50; // máximo permitido por YouTube API
 
-                // OPCIÓN 1: Usar search con channelId
+                // Construir la consulta de búsqueda
                 let searchQuery = '/search?part=snippet';
-                searchQuery += `&channelId=${CHANNEL_ID}`; // Filtrar por canal específico
-                searchQuery += `&maxResults=${maxResults}`;
+                searchQuery += `&channelId=${CHANNEL_ID}`;
+                searchQuery += `&maxResults=${apiMaxResults}`;
 
-                // Agregar filtro de categoría si está especificado
+                // Solo agregamos filtro de categoría en la API si es necesario
                 if (category && category !== "Todos") {
                     searchQuery += `&q=${encodeURIComponent(category)}`;
                 }
@@ -128,9 +178,11 @@ class YouTubeService {
                 searchQuery += '&type=video';
                 searchQuery += '&order=date'; // Ordenar por fecha (más recientes primero)
 
-                if (pageToken) {
+                // Solo usamos pageToken real con la API si no tenemos suficientes videos en caché
+                if (pageToken && !mainCacheData) {
                     searchQuery += `&pageToken=${pageToken}`;
                 }
+
                 searchQuery += `&key=${currentApiKey}`;
 
                 // Realizar petición de búsqueda
@@ -192,11 +244,25 @@ class YouTubeService {
                     };
                 });
 
-                // Aplicar filtro de categoría en el cliente si es necesario
+                // OPTIMIZACIÓN: Guardar TODOS los videos obtenidos en caché global
+                try {
+                    await AsyncStorage.setItem(
+                        CACHE_MAIN_DATA,
+                        JSON.stringify({
+                            data: {
+                                videos,
+                                nextPageToken: searchData.nextPageToken || null
+                            },
+                            timestamp: Date.now()
+                        })
+                    );
+                } catch (cacheError) {
+                    console.warn('Error al guardar en caché principal:', cacheError);
+                }
+
+                // OPTIMIZACIÓN: Filtrar por categoría en el lado del cliente
                 let filteredVideos = videos;
                 if (category && category !== "Todos") {
-                    // Este es un filtrado adicional basado en etiquetas,
-                    // útil si la búsqueda por 'q' no es suficientemente precisa
                     const normalizeString = (str) => str.toLowerCase().replace(/\s+/g, '');
                     const normalizedCategory = normalizeString(category);
 
@@ -206,19 +272,21 @@ class YouTubeService {
                         )
                     );
 
-                    // Si el filtrado eliminó todos los resultados, usar los originales
                     if (filteredVideos.length === 0) {
                         filteredVideos = videos;
                     }
                 }
 
+                // Limitar resultados a lo solicitado por el cliente
+                filteredVideos = filteredVideos.slice(0, maxResults);
+
                 const result = {
                     videos: filteredVideos,
-                    nextPageToken: searchData.nextPageToken || null
+                    nextPageToken: videos.length > maxResults ? videos[maxResults].id : null
                 };
 
-                // Guardar en caché si se especificó una clave
-                if (cacheKey) {
+                // También guardar en caché específica si se proporcionó cacheKey
+                if (cacheKey && cacheKey !== CACHE_MAIN_DATA) {
                     try {
                         await AsyncStorage.setItem(
                             `video_cache_${cacheKey}`,
@@ -228,7 +296,7 @@ class YouTubeService {
                             })
                         );
                     } catch (cacheError) {
-                        console.warn('Error al guardar en caché:', cacheError);
+                        console.warn('Error al guardar en caché específica:', cacheError);
                     }
                 }
 
@@ -246,6 +314,39 @@ class YouTubeService {
                     throw error;
                 }
             }
+        }
+
+        // 3. FALLBACK: Si todas las API keys fallan, intentar usar cualquier dato en caché
+        try {
+            const cachedData = await AsyncStorage.getItem(CACHE_MAIN_DATA);
+            if (cachedData) {
+                const { data } = JSON.parse(cachedData);
+                console.warn('Usando caché de emergencia debido a errores de API');
+
+                // Si hay categoría, filtramos localmente
+                if (category && category !== "Todos") {
+                    const normalizeString = (str) => str.toLowerCase().replace(/\s+/g, '');
+                    const normalizedCategory = normalizeString(category);
+
+                    const filteredVideos = data.videos.filter(video =>
+                        (video.snippet.tags || []).some(tag =>
+                            normalizeString(tag) === normalizedCategory
+                        )
+                    );
+
+                    return {
+                        videos: filteredVideos.slice(0, maxResults),
+                        nextPageToken: null // Desactivamos paginación en modo emergencia
+                    };
+                }
+
+                return {
+                    videos: data.videos.slice(0, maxResults),
+                    nextPageToken: null // Desactivamos paginación en modo emergencia
+                };
+            }
+        } catch (error) {
+            console.error('Error al intentar usar caché de emergencia:', error);
         }
 
         throw new Error('No se pudieron obtener videos. Todas las claves API han alcanzado su límite de cuota.');
@@ -277,6 +378,57 @@ class YouTubeService {
         } else {
             return `${minutes}:${seconds.toString().padStart(2, '0')}`;
         }
+    }
+
+    // NUEVO MÉTODO: Iniciar precarga en background
+    static async prefetchVideos() {
+        try {
+            // Verificar si ya tenemos caché reciente
+            const cachedData = await AsyncStorage.getItem(CACHE_MAIN_DATA);
+            if (cachedData) {
+                const { timestamp } = JSON.parse(cachedData);
+                // Si la caché tiene menos de 3 días, no hacer nada
+                if (Date.now() - timestamp < 3 * 24 * 60 * 60 * 1000) {
+                    console.log('Caché principal reciente, omitiendo precarga');
+                    return;
+                }
+            }
+
+            // Si llegamos aquí, hacemos la precarga
+            console.log('Iniciando precarga de videos en background...');
+            this.getVideos({
+                forceRefresh: true,
+                maxResults: 50 // Cargar muchos videos de una vez
+            }).catch(error => {
+                console.warn('Error en precarga de videos:', error);
+            });
+        } catch (error) {
+            console.warn('Error al verificar necesidad de precarga:', error);
+        }
+    }
+
+    // NUEVA FUNCIÓN: Proporcionar videos de respaldo si todo falla
+    static async getFallbackVideos() {
+        // Datos de videos de respaldo para emergencias extremas
+        // Estos se mostrarían si todas las API keys fallan y no hay caché
+        return {
+            videos: [
+                {
+                    id: 'VIDEO_ID_1',
+                    snippet: {
+                        title: 'Video de respaldo 1',
+                        description: 'Este video se muestra cuando no hay conexión',
+                        tags: ['Respaldo', 'Ejercicio'],
+                        thumbnails: {
+                            high: { url: 'https://via.placeholder.com/480x360.png?text=Video+No+Disponible' }
+                        }
+                    },
+                    formattedDuration: '10:00'
+                },
+                // Puedes agregar más videos de respaldo aquí
+            ],
+            nextPageToken: null
+        };
     }
 }
 

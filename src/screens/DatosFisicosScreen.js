@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     FlatList,
     Image,
@@ -13,6 +13,7 @@ import {
     TouchableOpacity,
     TouchableWithoutFeedback,
     View,
+    Platform,
 } from 'react-native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import Slider from '@react-native-community/slider';
@@ -27,6 +28,15 @@ const ClipboardImage = require('../assets/clipboard.png');
 const AvatarMujerImage = require('../assets/AvatarMujer.png');
 const AvatarHombreImage = require('../assets/AvatarHombre.png');
 const BasculaImage = require('../assets/bascula.png');
+
+// Definir las etapas de vida con sus rangos de edad (fuera del componente para no recrearlas)
+const etapasVida = [
+    { id: 'adolescente', titulo: 'Adolescente', rango: '13-17 años', edadMedia: 15 },
+    { id: 'joven', titulo: 'Joven adulto', rango: '18-29 años', edadMedia: 24 },
+    { id: 'adulto', titulo: 'Adulto', rango: '30-45 años', edadMedia: 38 },
+    { id: 'maduro', titulo: 'Adulto maduro', rango: '46-59 años', edadMedia: 52 },
+    { id: 'mayor', titulo: 'Adulto mayor', rango: '60+ años', edadMedia: 65 }
+];
 
 const DatosFisicosScreen = () => {
     const navigation = useNavigation();
@@ -44,6 +54,19 @@ const DatosFisicosScreen = () => {
     });
     const [selectedFirstPicker, setSelectedFirstPicker] = useState('0');
     const [selectedSecondPicker, setSelectedSecondPicker] = useState('0');
+    const [etapaSeleccionada, setEtapaSeleccionada] = useState('joven');
+
+    // Efecto para inicializar la etapa basada en la edad
+    useEffect(() => {
+        if (formData.edad) {
+            const edad = parseInt(formData.edad);
+            if (edad < 18) setEtapaSeleccionada('adolescente');
+            else if (edad < 30) setEtapaSeleccionada('joven');
+            else if (edad < 46) setEtapaSeleccionada('adulto');
+            else if (edad < 60) setEtapaSeleccionada('maduro');
+            else setEtapaSeleccionada('mayor');
+        }
+    }, [formData.edad]);
 
     // Lista de niveles de actividad física
     const activityLevels = [
@@ -115,61 +138,113 @@ const DatosFisicosScreen = () => {
     };
 
     const renderGeneroView = () => (
-        <>
+        <View style={styles.genderContainer}>
             <Text style={styles.title}>¿Cuál es tu género?</Text>
-            <View style={styles.radioContainer}>
+            <Text style={styles.genderSubtitle}>
+                Transformamos tu cuerpo y elevamos tu salud.
+            </Text>
+
+            <View style={styles.genderOptionsContainer}>
                 <TouchableOpacity
-                    style={styles.radioButton}
+                    style={[
+                        styles.genderOption,
+                        formData.genero === 'Masculino' ? styles.genderOptionSelected : styles.genderOptionUnselected
+                    ]}
                     onPress={() => setFormData((prev) => ({ ...prev, genero: 'Masculino' }))}
                 >
-                    <Image
-                        source={AvatarHombreImage}
-                        style={styles.radioImage}
-                    />
-                    <View
-                        style={[
-                            styles.radioCircle,
-                            formData.genero === 'Masculino' && styles.radioSelected,
-                        ]}
-                    />
+                    <Text style={[
+                        styles.genderSymbol,
+                        formData.genero === 'Masculino' ? styles.genderTextSelected : styles.genderTextUnselected
+                    ]}>♂</Text>
+                    <Text style={[
+                        styles.genderText,
+                        formData.genero === 'Masculino' ? styles.genderTextSelected : styles.genderTextUnselected
+                    ]}>Hombre</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                    style={styles.radioButton}
+                    style={[
+                        styles.genderOption,
+                        formData.genero === 'Femenino' ? styles.genderOptionSelected : styles.genderOptionUnselected
+                    ]}
                     onPress={() => setFormData((prev) => ({ ...prev, genero: 'Femenino' }))}
                 >
-                    <Image
-                        source={AvatarMujerImage}
-                        style={styles.radioImage}
-                    />
-                    <View
-                        style={[
-                            styles.radioCircle,
-                            formData.genero === 'Femenino' && styles.radioSelected,
-                        ]}
-                    />
+                    <Text style={[
+                        styles.genderSymbol,
+                        formData.genero === 'Femenino' ? styles.genderTextSelected : styles.genderTextUnselected
+                    ]}>♀</Text>
+                    <Text style={[
+                        styles.genderText,
+                        formData.genero === 'Femenino' ? styles.genderTextSelected : styles.genderTextUnselected
+                    ]}>Mujer</Text>
                 </TouchableOpacity>
             </View>
-        </>
+        </View>
     );
 
-    const renderEdadView = () => (
-        <>
-            <Text style={styles.title}>¿Cuál es tu edad?</Text>
-            <Text style={styles.subtitle}>{formData.edad} años</Text>
-            <Slider
-                style={styles.slider}
-                minimumValue={0}
-                maximumValue={100}
-                step={1}
-                value={formData.edad}
-                onValueChange={(value) => setFormData((prev) => ({ ...prev, edad: value }))}
-                minimumTrackTintColor="#4630EB"
-                maximumTrackTintColor="#888888"
-                thumbTintColor="#4630EB"
-            />
-        </>
-    );
+    const renderEdadView = () => {
+        // Manejar cambio de etapa
+        const cambiarEtapa = (etapaId) => {
+            setEtapaSeleccionada(etapaId);
+
+            // Encontrar la etapa seleccionada
+            const etapa = etapasVida.find(e => e.id === etapaId);
+
+            // Actualizar formData con la edad media representativa de esa etapa
+            setFormData(prev => ({
+                ...prev,
+                edad: etapa.edadMedia.toString()
+            }));
+        };
+
+        return (
+            <View style={styles.etapasContainer}>
+                <Text style={styles.title}>¿Cuál es tu etapa de vida?</Text>
+                <Text style={styles.etapasSubtitle}>
+                    Transformamos tu cuerpo y elevamos tu salud.
+                </Text>
+
+                <View style={styles.etapasOptionsContainer}>
+                    {etapasVida.map(etapa => (
+                        <TouchableOpacity
+                            key={etapa.id}
+                            style={[
+                                styles.etapaOption,
+                                etapaSeleccionada === etapa.id ? styles.etapaOptionSelected : styles.etapaOptionUnselected
+                            ]}
+                            onPress={() => cambiarEtapa(etapa.id)}
+                        >
+                            <View style={styles.etapaContent}>
+                                <Text
+                                    style={[
+                                        styles.etapaTitulo,
+                                        etapaSeleccionada === etapa.id ? styles.etapaTextSelected : styles.etapaTextUnselected
+                                    ]}
+                                >
+                                    {etapa.titulo}
+                                </Text>
+                                <Text
+                                    style={[
+                                        styles.etapaRango,
+                                        etapaSeleccionada === etapa.id ? styles.etapaTextSelected : styles.etapaTextUnselected
+                                    ]}
+                                >
+                                    {etapa.rango}
+                                </Text>
+                            </View>
+
+                            <View
+                                style={[
+                                    styles.radioCircle,
+                                    etapaSeleccionada === etapa.id && styles.radioSelected,
+                                ]}
+                            />
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            </View>
+        );
+    };
 
     const renderPesoView = () => (
         <>
@@ -196,49 +271,67 @@ const DatosFisicosScreen = () => {
         const optionsPicker1 = Array.from({ length: 3 }, (_, i) => i.toString()); // 0, 1, 2 (metros)
         const optionsPicker2 = Array.from({ length: 100 }, (_, i) => i.toString()); // 0, 1, ..., 99 (centímetros)
 
-        const updateEstatura = (picker1Value, picker2Value) => {
-            console.log("Valores seleccionados:", picker1Value, picker2Value); // Depuración
+        // Obtener la altura actual para mostrarla visualmente
+        const metros = parseInt(selectedFirstPicker, 10);
+        const centimetros = parseInt(selectedSecondPicker, 10);
+        const estaturaTotal = (metros * 100 + centimetros);
 
-            const metros = parseInt(picker1Value, 10); // Convertir a número base 10
-            const centimetros = parseInt(picker2Value, 10); // Convertir a número base 10
+        const updateEstatura = (picker1Value, picker2Value) => {
+            console.log("Valores seleccionados:", picker1Value, picker2Value);
+
+            const metros = parseInt(picker1Value, 10);
+            const centimetros = parseInt(picker2Value, 10);
             const totalEstatura = metros * 100 + centimetros;
 
-            console.log("Estatura calculada:", totalEstatura); // Depuración
+            console.log("Estatura calculada:", totalEstatura);
 
             setFormData((prev) => ({ ...prev, estatura: totalEstatura.toString() }));
         };
 
         return (
-            <>
+            <View style={styles.estaturaContainer}>
                 <Text style={styles.title}>¿Cuál es tu estatura (cm)?</Text>
-                <View style={styles.InputContainer}>
-                    <Picker
-                        style={styles.picker}
-                        selectedValue={selectedFirstPicker}
-                        onValueChange={(itemValue) => {
-                            setSelectedFirstPicker(itemValue);
-                            updateEstatura(itemValue, selectedSecondPicker);
-                        }}
-                    >
-                        {optionsPicker1.map((value) => (
-                            <Picker.Item key={value} label={`${value} m`} value={value} />
-                        ))}
-                    </Picker>
 
-                    <Picker
-                        style={styles.picker}
-                        selectedValue={selectedSecondPicker}
-                        onValueChange={(itemValue) => {
-                            setSelectedSecondPicker(itemValue);
-                            updateEstatura(selectedFirstPicker, itemValue);
-                        }}
-                    >
-                        {optionsPicker2.map((value) => (
-                            <Picker.Item key={value} label={`${value} cm`} value={value} />
-                        ))}
-                    </Picker>
+                {/* Mostrar la estatura actual */}
+                <Text style={styles.estaturaDisplay}>
+                    {`${metros}.${centimetros < 10 ? '0' + centimetros : centimetros} m`}
+                </Text>
+
+                {/* Pickers actuales con estilo mejorado */}
+                <View style={styles.InputContainer}>
+                    <View style={styles.pickerColumn}>
+                        <Text style={styles.pickerLabel}>Metros</Text>
+                        <Picker
+                            style={styles.picker}
+                            selectedValue={selectedFirstPicker}
+                            onValueChange={(itemValue) => {
+                                setSelectedFirstPicker(itemValue);
+                                updateEstatura(itemValue, selectedSecondPicker);
+                            }}
+                        >
+                            {optionsPicker1.map((value) => (
+                                <Picker.Item key={value} label={`${value} m`} value={value} />
+                            ))}
+                        </Picker>
+                    </View>
+
+                    <View style={styles.pickerColumn}>
+                        <Text style={styles.pickerLabel}>Centímetros</Text>
+                        <Picker
+                            style={styles.picker}
+                            selectedValue={selectedSecondPicker}
+                            onValueChange={(itemValue) => {
+                                setSelectedSecondPicker(itemValue);
+                                updateEstatura(selectedFirstPicker, itemValue);
+                            }}
+                        >
+                            {optionsPicker2.map((value) => (
+                                <Picker.Item key={value} label={`${value} cm`} value={value} />
+                            ))}
+                        </Picker>
+                    </View>
                 </View>
-            </>
+            </View>
         );
     };
 
@@ -330,7 +423,7 @@ const DatosFisicosScreen = () => {
 
         return (
             <SafeAreaProvider style={{flex: 1, backgroundColor: '#fff'}}>
-                <StatusBar style="auto"/>
+                <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF"/>
                 <ScrollView contentContainerStyle={{flexGrow: 1, paddingBottom: 20}}>
                     <Text style={styles.title}>Resumen de tus datos</Text>
 
@@ -358,12 +451,6 @@ const DatosFisicosScreen = () => {
                         <Text style={styles.sectionTitle}>Datos Físicos</Text>
 
                         <View style={styles.iconDataRow}>
-                            <Image
-                                source={allData.genero === 'Masculino'
-                                    ? AvatarHombreImage
-                                    : AvatarMujerImage}
-                                style={styles.smallIcon}
-                            />
                             <View style={styles.dataRowFlex}>
                                 <Text style={styles.dataLabel}>Género:</Text>
                                 <Text style={styles.dataValue}>{allData.genero || 'No especificado'}</Text>
@@ -371,7 +458,6 @@ const DatosFisicosScreen = () => {
                         </View>
 
                         <View style={styles.iconDataRow}>
-                            <Image source={BasculaImage} style={styles.smallIcon} />
                             <View style={styles.dataRowFlex}>
                                 <Text style={styles.dataLabel}>Edad:</Text>
                                 <Text style={styles.dataValue}>{allData.edad ? `${allData.edad} años` : 'No especificada'}</Text>
@@ -379,7 +465,6 @@ const DatosFisicosScreen = () => {
                         </View>
 
                         <View style={styles.iconDataRow}>
-                            <Image source={BasculaImage} style={styles.smallIcon} />
                             <View style={styles.dataRowFlex}>
                                 <Text style={styles.dataLabel}>Peso:</Text>
                                 <Text style={styles.dataValue}>{allData.peso ? `${allData.peso} kg` : 'No especificado'}</Text>
@@ -387,7 +472,6 @@ const DatosFisicosScreen = () => {
                         </View>
 
                         <View style={styles.iconDataRow}>
-                            <Image source={BasculaImage} style={styles.smallIcon} />
                             <View style={styles.dataRowFlex}>
                                 <Text style={styles.dataLabel}>Estatura:</Text>
                                 <Text style={styles.dataValue}>{formatEstatura(allData.estatura)}</Text>
@@ -525,7 +609,7 @@ const DatosFisicosScreen = () => {
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
             <SafeAreaView style={styles.container}>
                 <View style={styles.content}>
-                    <StatusBar style="auto" />
+                    <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
                     {currentView === 'Genero' && renderGeneroView()}
                     {currentView === 'Edad' && renderEdadView()}
                     {currentView === 'Peso' && renderPesoView()}
@@ -537,11 +621,11 @@ const DatosFisicosScreen = () => {
 
                     {currentView !== 'Resumen' && (
                         <Pressable
-                            style={styles.registerButton}
+                            style={[styles.registerButton, currentView === 'Genero' && styles.nextButton]}
                             onPress={handleNext}
                         >
                             <Text style={styles.buttonText}>
-                                {currentView === 'Actividad' ? 'Ver Resumen' : 'Continuar'}
+                                {currentView === 'Actividad' ? 'Ver Resumen' : 'Siguiente'}
                             </Text>
                         </Pressable>
                     )}
@@ -564,7 +648,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#FFFFFF',
-        marginTop: StatusBar.currentHeight || 0,
+        marginTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     },
     content: {
         flex: 1,
@@ -628,6 +712,12 @@ const styles = StyleSheet.create({
         marginBottom: 10,
         alignItems: 'center',
     },
+    nextButton: {
+        backgroundColor: '#7469B6',
+        borderRadius: 8,
+        marginTop: 'auto',
+        marginBottom: 20,
+    },
     buttonText: {
         color: '#fff',
         fontSize: 24,
@@ -676,11 +766,6 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: 20,
-    },
-    picker: {
-        flex: 1,
-        height: 200,
-        marginHorizontal: 10,
     },
     item: {
         backgroundColor: '#fff',
@@ -844,6 +929,138 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontWeight: 'bold',
         textAlign: 'center',
+    },
+
+    // Nuevos estilos para el UI actualizado del género
+    genderContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingTop: 40,
+    },
+    genderSubtitle: {
+        fontSize: 16,
+        color: '#666666',
+        textAlign: 'center',
+        marginBottom: 30,
+    },
+    genderOptionsContainer: {
+        width: '100%',
+        flexDirection: 'column',
+        alignItems: 'center',
+        marginTop: 20,
+        gap: 16,
+    },
+    genderOption: {
+        width: '100%',
+        height: 110,
+        borderRadius: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 16,
+    },
+    genderOptionSelected: {
+        backgroundColor: '#7469B6', // Color principal para seleccionado
+    },
+    genderOptionUnselected: {
+        backgroundColor: '#F2F2F2', // Gris claro para no seleccionado
+    },
+    genderSymbol: {
+        fontSize: 48,
+        marginRight: 12,
+    },
+    genderText: {
+        fontSize: 24,
+        fontWeight: '600',
+    },
+    genderTextSelected: {
+        color: 'white',
+    },
+    genderTextUnselected: {
+        color: '#666666',
+    },
+
+    // Estilos para el nuevo componente de etapas de vida
+    etapasContainer: {
+        flex: 1,
+        justifyContent: 'flex-start',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingTop: 40,
+    },
+    etapasSubtitle: {
+        fontSize: 16,
+        color: '#666666',
+        textAlign: 'center',
+        marginBottom: 30,
+    },
+    etapasOptionsContainer: {
+        width: '100%',
+        marginTop: 20,
+    },
+    etapaOption: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 16,
+        borderRadius: 8,
+        marginBottom: 12,
+    },
+    etapaOptionSelected: {
+        backgroundColor: '#7469B6',
+    },
+    etapaOptionUnselected: {
+        backgroundColor: '#F2F2F2',
+    },
+    etapaContent: {
+        flex: 1,
+    },
+    etapaTitulo: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 4,
+    },
+    etapaRango: {
+        fontSize: 14,
+    },
+    etapaTextSelected: {
+        color: 'white',
+    },
+    etapaTextUnselected: {
+        color: '#666666',
+    },
+
+    estaturaContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+    },
+    estaturaDisplay: {
+        fontSize: 42,
+        fontWeight: 'bold',
+        color: '#7469B6',
+        marginVertical: 30,
+        textAlign: 'center',
+    },
+    pickerColumn: {
+        flex: 1,
+    },
+    pickerLabel: {
+        fontSize: 16,
+        marginBottom: 8,
+        fontWeight: '500',
+        textAlign: 'center',
+    },
+    picker: {
+        flex: 1,
+        height: 200,
+        marginHorizontal: 5,
+        backgroundColor: '#F8F8F8',
+        borderRadius: 10,
+        padding: 10,
     },
 });
 
