@@ -3,21 +3,10 @@ import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {StyleSheet, TouchableOpacity} from 'react-native';
 import {TransitionPresets} from '@react-navigation/stack';
 import {Ionicons} from '@expo/vector-icons';
-import {
-    ExerciseScreen,
-    HomeScreen,
-    LoginScreen,
-    RegisterDataEmailScreen,
-    RegisterDataPhoneScreen,
-    RegisterPhoneScreen,
-    RegisterScreen,
-    VerifyCodeEMailScreen,
-    VerifyCodePhoneScreen,
-    VideoPlayerScreen,
-    WelcomeScreen,
-} from '../screens/IndexScreens';
-import DatosFisicosScreen from "../screens/DatosFisicosScreen";
 
+// Importar el objeto por defecto desde IndexScreens
+import Screens from '../screens/IndexScreens';
+import DatosFisicosScreen from "../screens/DatosFisicosScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -26,12 +15,12 @@ const Navigation = () => {
         <Stack.Navigator initialRouteName="Inicio">
             <Stack.Screen
                 name="Inicio"
-                component={WelcomeScreen}
+                component={Screens.WelcomeScreen}
                 options={{headerShown: false}}
             />
             <Stack.Screen
                 name="Inicio de sesión"
-                component={LoginScreen}
+                component={Screens.LoginScreen}
                 options={({navigation}) => ({
                     title: '',
                     headerTintColor: '#7469B6',
@@ -49,7 +38,7 @@ const Navigation = () => {
             />
             <Stack.Screen
                 name="Registrarse"
-                component={RegisterScreen}
+                component={Screens.RegisterScreen}
                 options={({navigation}) => ({
                     title: '',
                     headerTintColor: '#7469B6',
@@ -67,7 +56,7 @@ const Navigation = () => {
             />
             <Stack.Screen
                 name="Registro con Celular"
-                component={RegisterPhoneScreen}
+                component={Screens.RegisterPhoneScreen}
                 screenOptions={{
                     ...TransitionPresets.SlideFromRightIOS, // Una de las transiciones predefinidas de iOS
                 }}
@@ -89,7 +78,7 @@ const Navigation = () => {
             />
             <Stack.Screen
                 name="Verificacion de Codigo"
-                component={VerifyCodePhoneScreen}
+                component={Screens.VerifyCodePhoneScreen}
                 screenOptions={{
                     ...TransitionPresets.SlideFromRightIOS, // Una de las transiciones predefinidas de iOS
                 }}
@@ -111,7 +100,7 @@ const Navigation = () => {
             />
             <Stack.Screen
                 name="Verificacion de Codigo EMail"
-                component={VerifyCodeEMailScreen}
+                component={Screens.VerifyCodeEMailScreen}
                 screenOptions={{
                     ...TransitionPresets.SlideFromRightIOS, // Una de las transiciones predefinidas de iOS
                 }}
@@ -133,7 +122,7 @@ const Navigation = () => {
             />
             <Stack.Screen
                 name="Register Data Email"
-                component={RegisterDataEmailScreen}
+                component={Screens.RegisterDataEmailScreen}
                 screenOptions={{
                     ...TransitionPresets.SlideFromRightIOS, // Una de las transiciones predefinidas de iOS
                 }}
@@ -155,7 +144,7 @@ const Navigation = () => {
             />
             <Stack.Screen
                 name="Register Data Phone"
-                component={RegisterDataPhoneScreen}
+                component={Screens.RegisterDataPhoneScreen}
                 screenOptions={{
                     ...TransitionPresets.SlideFromRightIOS, // Una de las transiciones predefinidas de iOS
                 }}
@@ -199,7 +188,7 @@ const Navigation = () => {
             />
             <Stack.Screen
                 name="Home"
-                component={HomeScreen}
+                component={Screens.HomeScreen}
                 options={({navigation}) => ({
                     title: '',
                     headerTransparent: true,
@@ -209,7 +198,7 @@ const Navigation = () => {
             />
             <Stack.Screen
                 name="ExerciseScreen"
-                component={ExerciseScreen}
+                component={Screens.ExerciseScreen}
                 options={({navigation}) => ({
                     title: 'Ejercicios',
                     headerTransparent: false,
@@ -220,15 +209,13 @@ const Navigation = () => {
             {/* Videos */}
             <Stack.Screen
                 name="VideoPlayerScreen"
-                component={VideoPlayerScreen}
+                component={Screens.VideoPlayerScreen}
                 options={({route, navigation}) => ({
                     title: route.params?.title || 'Reproductor', // Usa el título del video o un valor por defecto
                     headerShown: true,
                 })}
             />
-
         </Stack.Navigator>
-
     );
 };
 

@@ -17,7 +17,12 @@ import {getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword} fro
 import {getDatabase} from '../../firebaseConfig.js';
 import {firebaseConfig} from '../../firebaseConfig.js';
 import {initializeApp} from 'firebase/app';
-import { configureGoogleSignIn, signInWithGoogle } from '../../GoogleAuthService';
+import { configureGoogleSignIn, useGoogleAuth, signInWithGoogleNative } from '../../GoogleAuthService';
+import Constants from 'expo-constants';
+
+import * as WebBrowser from 'expo-web-browser';
+
+WebBrowser.maybeCompleteAuthSession();
 
 const LoginScreen = ({ navigation }) => {
 
@@ -31,9 +36,21 @@ const LoginScreen = ({ navigation }) => {
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
 
+    // Determinar si estamos en Expo Go
+    // El valor 'storeClient' significa que estamos ejecutando dentro de Expo Go
+    const isExpoGo = Constants.executionEnvironment === 'storeClient';
+    console.log('Entorno de ejecución:', Constants.executionEnvironment, 'isExpoGo:', isExpoGo);
+
+    // Usar nuestro hook personalizado para Google Auth
+    const googleAuth = useGoogleAuth();
+
     // Configura Google Sign-In al cargar el componente
     useEffect(() => {
-        configureGoogleSignIn();
+        const setupGoogleAuth = async () => {
+            await configureGoogleSignIn();
+        };
+
+        setupGoogleAuth();
     }, []);
 
     const handleCreateAccount = async () => {
@@ -115,9 +132,32 @@ const LoginScreen = ({ navigation }) => {
     const handleGoogleSignIn = async () => {
         setGoogleLoading(true);
         try {
-            await signInWithGoogle(navigation);
+            console.log('Iniciando autenticación de Google en:', isExpoGo ? 'Expo Go' : 'Entorno nativo');
+
+            if (isExpoGo) {
+                // En Expo Go, usamos el método del hook
+                console.log('Usando signInWithGoogleExpo');
+                if (!googleAuth || !googleAuth.signInWithGoogleExpo) {
+                    throw new Error('Método de autenticación no disponible en Expo Go');
+                }
+                await googleAuth.signInWithGoogleExpo(navigation);
+            } else {
+                // En entorno nativo, usamos la función tradicional
+                console.log('Usando signInWithGoogleNative');
+                await signInWithGoogleNative(navigation);
+            }
         } catch (error) {
             console.log('Error manejado en LoginScreen:', error);
+            let errorMessage = 'Ha ocurrido un error al iniciar sesión con Google.';
+
+            if (error.message) {
+                errorMessage += ' ' + error.message;
+            }
+
+            Alert.alert(
+                'Error de inicio de sesión',
+                errorMessage
+            );
         } finally {
             setGoogleLoading(false);
         }
@@ -182,7 +222,7 @@ const LoginScreen = ({ navigation }) => {
                                 <Pressable
                                     style={[styles.buttonGoogle, googleLoading && styles.buttonDisabled]}
                                     onPress={handleGoogleSignIn}
-                                    disabled={googleLoading || loading}
+                                    disabled={googleLoading}
                                 >
                                     {googleLoading ? (
                                         <ActivityIndicator size="small" color="#535353" />

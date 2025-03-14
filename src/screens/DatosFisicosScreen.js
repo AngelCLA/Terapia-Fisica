@@ -22,6 +22,12 @@ import { getAuth } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 
+// Importar imágenes correctamente
+const ClipboardImage = require('../assets/clipboard.png');
+const AvatarMujerImage = require('../assets/AvatarMujer.png');
+const AvatarHombreImage = require('../assets/AvatarHombre.png');
+const BasculaImage = require('../assets/bascula.png');
+
 const DatosFisicosScreen = () => {
     const navigation = useNavigation();
     const route = useRoute();
@@ -45,46 +51,46 @@ const DatosFisicosScreen = () => {
             id: 'sedentario',
             title: 'Sedentario',
             description: 'Poco o ningún ejercicio, trabajo de escritorio',
-            icon: require('../assets/clipboard.png'), // Puedes reemplazar con íconos propios
+            icon: ClipboardImage, // Usar la constante en lugar de require()
         },
         {
             id: 'ligero',
             title: 'Ligero',
             description: 'Ejercicio ligero 1-3 días por semana',
-            icon: require('../assets/clipboard.png'),
+            icon: ClipboardImage,
         },
         {
             id: 'moderado',
             title: 'Moderado',
             description: 'Ejercicio moderado 3-5 días por semana',
-            icon: require('../assets/clipboard.png'),
+            icon: ClipboardImage,
         },
         {
             id: 'activo',
             title: 'Muy Activo',
             description: 'Ejercicio intenso 6-7 días por semana',
-            icon: require('../assets/clipboard.png'),
+            icon: ClipboardImage,
         },
         {
             id: 'extremo',
             title: 'Extremadamente Activo',
             description: 'Ejercicio muy intenso, trabajo físico o atleta',
-            icon: require('../assets/clipboard.png'),
+            icon: ClipboardImage,
         },
     ];
 
     // Lista de padecimientos
     const items = [
-        { id: 1, label: 'Padecimiento 1', image: require('../assets/clipboard.png') },
-        { id: 2, label: 'Padecimiento 2', image: require('../assets/clipboard.png') },
-        { id: 3, label: 'Padecimiento 3', image: require('../assets/clipboard.png') },
-        { id: 4, label: 'Padecimiento 4', image: require('../assets/clipboard.png') },
-        { id: 5, label: 'Padecimiento 5', image: require('../assets/clipboard.png') },
-        { id: 6, label: 'Padecimiento 6', image: require('../assets/clipboard.png') },
-        { id: 7, label: 'Padecimiento 7', image: require('../assets/clipboard.png') },
-        { id: 8, label: 'Padecimiento 8', image: require('../assets/clipboard.png') },
-        { id: 9, label: 'Padecimiento 9', image: require('../assets/clipboard.png') },
-        { id: 10, label: 'Padecimiento 10', image: require('../assets/clipboard.png') },
+        { id: 1, label: 'Padecimiento 1', image: ClipboardImage },
+        { id: 2, label: 'Padecimiento 2', image: ClipboardImage },
+        { id: 3, label: 'Padecimiento 3', image: ClipboardImage },
+        { id: 4, label: 'Padecimiento 4', image: ClipboardImage },
+        { id: 5, label: 'Padecimiento 5', image: ClipboardImage },
+        { id: 6, label: 'Padecimiento 6', image: ClipboardImage },
+        { id: 7, label: 'Padecimiento 7', image: ClipboardImage },
+        { id: 8, label: 'Padecimiento 8', image: ClipboardImage },
+        { id: 9, label: 'Padecimiento 9', image: ClipboardImage },
+        { id: 10, label: 'Padecimiento 10', image: ClipboardImage },
     ];
 
     // Función para obtener el nombre del padecimiento según ID
@@ -117,7 +123,7 @@ const DatosFisicosScreen = () => {
                     onPress={() => setFormData((prev) => ({ ...prev, genero: 'Masculino' }))}
                 >
                     <Image
-                        source={require('../assets/AvatarHombre.png')}
+                        source={AvatarHombreImage}
                         style={styles.radioImage}
                     />
                     <View
@@ -133,7 +139,7 @@ const DatosFisicosScreen = () => {
                     onPress={() => setFormData((prev) => ({ ...prev, genero: 'Femenino' }))}
                 >
                     <Image
-                        source={require('../assets/AvatarMujer.png')}
+                        source={AvatarMujerImage}
                         style={styles.radioImage}
                     />
                     <View
@@ -169,7 +175,7 @@ const DatosFisicosScreen = () => {
         <>
             <Text style={styles.title}>¿Cuál es tu peso (kg)?</Text>
             <Image
-                source={require('../assets/bascula.png')}
+                source={BasculaImage}
                 style={{ height: 199, width: '50%', justifyContent: 'center', alignSelf: 'center', marginBottom: 20 }}
             />
             <View style={styles.weightInputContainer}>
@@ -354,8 +360,8 @@ const DatosFisicosScreen = () => {
                         <View style={styles.iconDataRow}>
                             <Image
                                 source={allData.genero === 'Masculino'
-                                    ? require('../assets/AvatarHombre.png')
-                                    : require('../assets/AvatarMujer.png')}
+                                    ? AvatarHombreImage
+                                    : AvatarMujerImage}
                                 style={styles.smallIcon}
                             />
                             <View style={styles.dataRowFlex}>
@@ -365,7 +371,7 @@ const DatosFisicosScreen = () => {
                         </View>
 
                         <View style={styles.iconDataRow}>
-                            <Image source={require('../assets/bascula.png')} style={styles.smallIcon} />
+                            <Image source={BasculaImage} style={styles.smallIcon} />
                             <View style={styles.dataRowFlex}>
                                 <Text style={styles.dataLabel}>Edad:</Text>
                                 <Text style={styles.dataValue}>{allData.edad ? `${allData.edad} años` : 'No especificada'}</Text>
@@ -373,7 +379,7 @@ const DatosFisicosScreen = () => {
                         </View>
 
                         <View style={styles.iconDataRow}>
-                            <Image source={require('../assets/bascula.png')} style={styles.smallIcon} />
+                            <Image source={BasculaImage} style={styles.smallIcon} />
                             <View style={styles.dataRowFlex}>
                                 <Text style={styles.dataLabel}>Peso:</Text>
                                 <Text style={styles.dataValue}>{allData.peso ? `${allData.peso} kg` : 'No especificado'}</Text>
@@ -381,7 +387,7 @@ const DatosFisicosScreen = () => {
                         </View>
 
                         <View style={styles.iconDataRow}>
-                            <Image source={require('../assets/bascula.png')} style={styles.smallIcon} />
+                            <Image source={BasculaImage} style={styles.smallIcon} />
                             <View style={styles.dataRowFlex}>
                                 <Text style={styles.dataLabel}>Estatura:</Text>
                                 <Text style={styles.dataValue}>{formatEstatura(allData.estatura)}</Text>
@@ -389,12 +395,11 @@ const DatosFisicosScreen = () => {
                         </View>
                     </View>
 
-
                     {/* Estas secciones se mantienen pero con valores por defecto
                     <View style={styles.card}>
                         <Text style={styles.sectionTitle}>Información Médica</Text>
                         <View style={styles.iconDataRow}>
-                            <Image source={require('../assets/clipboard.png')} style={styles.smallIcon} />
+                            <Image source={ClipboardImage} style={styles.smallIcon} />
                             <View style={styles.dataRowFlex}>
                                 <Text style={styles.dataLabel}>Padecimiento:</Text>
                                 <Text style={styles.dataValue}>No especificado</Text>
@@ -406,7 +411,7 @@ const DatosFisicosScreen = () => {
                         <Text style={styles.sectionTitle}>Actividad Física</Text>
                         <View style={styles.iconDataRow}>
                             <Image
-                                source={require('../assets/clipboard.png')}
+                                source={ClipboardImage}
                                 style={styles.smallIcon}
                             />
                             <View style={styles.dataRowFlex}>

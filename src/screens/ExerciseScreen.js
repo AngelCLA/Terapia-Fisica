@@ -1,8 +1,8 @@
-import React, {useEffect, useState} from 'react';
-import {Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
+import React, {useEffect, useState, useCallback} from 'react';
+import {Pressable, ScrollView, StyleSheet, Text, View, ActivityIndicator} from 'react-native';
 import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import VideoCard from '../components/VideoCard';
+import YouTubeService from '../services/YoutubeService';
 
 const categories = [
     "Todos",
@@ -16,119 +16,103 @@ const categories = [
     "Meditación"
 ];
 
-const CACHE_KEY = 'youtube_videos_cache';
-const CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 horas en milisegundos
-const API_KEY = 'AIzaSyCHS1WP1pkc536u2iIwK3UrEaUsw9faVQA';
-const CHANNEL_ID = 'UCNJWe9sVinPkGd1KqGP45cA';
-
 const normalizeString = (str) => str.toLowerCase().replace(/\s+/g, '');
 
 const ExerciseScreen = ({navigation}) => {
     const [selectedCategory, setSelectedCategory] = useState("Todos");
     const [videos, setVideos] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [nextPageToken, setNextPageToken] = useState(null);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-    const formatDuration = (isoDuration) => {
-        const match = isoDuration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
-        const hours = (match[1] || '').replace('H', '');
-        const minutes = (match[2] || '').replace('M', '');
-        const seconds = (match[3] || '').replace('S', '');
-        return hours ? `${hours}:${minutes.padStart(2, '0')}:${seconds.padStart(2, '0')}` : `${minutes || '0'}:${seconds.padStart(2, '0')}`;
-    };
-
-    const fetchVideosFromAPI = async () => {
-        try {
-            const response = await fetch(
-                `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${CHANNEL_ID}&maxResults=10&type=video&key=${API_KEY}`
-            );
-            const data = await response.json();
-
-            if (!data.items) return null;
-
-            const videoIds = data.items.map((video) => video.id.videoId).join(',');
-
-            const detailsResponse = await fetch(
-                `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id=${videoIds}&key=${API_KEY}`
-            );
-            const detailsData = await detailsResponse.json();
-
-            if (!detailsData.items) return null;
-
-            return detailsData.items.map((video) => ({
-                ...video,
-                formattedDuration: formatDuration(video.contentDetails.duration),
-            }));
-        } catch (error) {
-            console.error('Error fetching videos:', error);
-            return null;
+    // Helper to load videos for the selected category
+    // Modificación del loadVideos para cargar todos los videos una sola vez
+    const loadVideos = useCallback(async (refresh = false) => {
+        if (refresh) {
+            setIsLoading(true);
+        } else if (isLoadingMore) {
+            return; // Prevent multiple pagination requests
         }
-    };
 
-    const saveToCache = async (videosData) => {
-        try {
-            const cacheData = {
-                videos: videosData,
-                timestamp: Date.now(),
-            };
-            await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
-        } catch (error) {
-            console.error('Error saving to cache:', error);
+        // Only set loading more if we're paginating
+        if (!refresh && nextPageToken) {
+            setIsLoadingMore(true);
         }
-    };
 
-    const loadFromCache = async () => {
         try {
-            const cachedData = await AsyncStorage.getItem(CACHE_KEY);
-            if (cachedData) {
-                const {videos, timestamp} = JSON.parse(cachedData);
-                const isExpired = Date.now() - timestamp > CACHE_EXPIRY;
+            const result = await YouTubeService.getVideos({
+                maxResults: 10,
+                category: null, // No filtrar en servidor
+                cacheKey: `exercise_all`,
+                forceRefresh: refresh,
+                pageToken: refresh ? null : nextPageToken
+            });
 
-                if (!isExpired) {
-                    return videos;
+            if (result.videos) {
+                if (refresh || !nextPageToken) {
+                    // Replace videos on fresh load
+                    setVideos(result.videos);
+                } else {
+                    // Append videos when paginating
+                    setVideos(prev => [...prev, ...result.videos]);
                 }
-            }
-            return null;
-        } catch (error) {
-            console.error('Error loading from cache:', error);
-            return null;
-        }
-    };
 
-    const loadVideos = async () => {
-        setIsLoading(true);
-        try {
-            // Intentar cargar desde cache primero
-            const cachedVideos = await loadFromCache();
-
-            if (cachedVideos) {
-                setVideos(cachedVideos);
-            } else {
-                // Si no hay cache válido, hacer llamada a la API
-                const freshVideos = await fetchVideosFromAPI();
-                if (freshVideos) {
-                    setVideos(freshVideos);
-                    await saveToCache(freshVideos);
-                }
+                // Update next page token for pagination
+                setNextPageToken(result.nextPageToken);
             }
         } catch (error) {
-            console.error('Error loading videos:', error);
+            console.error('Error loading videos in ExerciseScreen:', error);
         } finally {
             setIsLoading(false);
+            setIsLoadingMore(false);
+        }
+    }, [nextPageToken, isLoadingMore]);
+
+// Y luego modificarías el useEffect para no pasar la categoría:
+    useEffect(() => {
+        loadVideos(true);
+    }, []);
+
+// Y eliminarías este useEffect:
+// useEffect(() => {
+//     if (selectedCategory) {
+//         loadVideos(selectedCategory, true);
+//     }
+// }, [selectedCategory]);
+
+    // Handle "reached end of list" to load more
+    const handleEndReached = () => {
+        if (nextPageToken && !isLoadingMore && !isLoading) {
+            loadVideos();
         }
     };
 
-    useEffect(() => {
-        loadVideos();
-    }, []);
-
+    // Filter videos based on selected category (for client-side filtering)
     const filteredVideos = selectedCategory === "Todos"
         ? videos
-        : videos.filter((video) => (video.snippet.tags || []).some((tag) => normalizeString(tag) === normalizeString(selectedCategory)));
+        : videos.filter((video) =>
+            (video.snippet.tags || []).some((tag) =>
+                normalizeString(tag) === normalizeString(selectedCategory)
+            )
+        );
 
     return (
         <SafeAreaProvider>
             <SafeAreaView style={styles.container}>
-                <ScrollView contentContainerStyle={styles.content}>
+                <ScrollView
+                    contentContainerStyle={styles.content}
+                    onScroll={({nativeEvent}) => {
+                        const {layoutMeasurement, contentOffset, contentSize} = nativeEvent;
+                        const paddingToBottom = 20;
+                        const isCloseToBottom = layoutMeasurement.height + contentOffset.y >=
+                            contentSize.height - paddingToBottom;
+
+                        if (isCloseToBottom) {
+                            handleEndReached();
+                        }
+                    }}
+                    scrollEventThrottle={400} // Throttle scroll events
+                >
                     <View style={styles.tagsContainer}>
                         {categories.map((category, index) => (
                             <Pressable
@@ -143,27 +127,40 @@ const ExerciseScreen = ({navigation}) => {
                         ))}
                     </View>
                     <View style={styles.videoList}>
-                        {isLoading ? (
-                            <Text style={styles.loadingText}>Cargando videos...</Text>
+                        {isLoading && !isLoadingMore ? (
+                            <View style={styles.loaderContainer}>
+                                <ActivityIndicator size="large" color="#0000ff" />
+                                <Text style={styles.loadingText}>Cargando videos...</Text>
+                            </View>
                         ) : filteredVideos.length > 0 ? (
-                            filteredVideos.map((video) => (
-                                <VideoCard
-                                    key={video.id}
-                                    videoId={video.id}
-                                    title={video.snippet.title}
-                                    description={video.snippet.description}
-                                    videoTags={video.snippet.tags || []}
-                                    videoDuration={video.formattedDuration}
-                                    onPress={() =>
-                                        navigation.navigate('VideoPlayerScreen', {
-                                            videoId: video.id,
-                                            title: video.snippet.title,
-                                            description: video.snippet.description,
-                                            videoTags: video.snippet.tags || [],
-                                        })
-                                    }
-                                />
-                            ))
+                            <>
+                                {filteredVideos.map((video) => (
+                                    <VideoCard
+                                        key={video.id}
+                                        videoId={video.id}
+                                        title={video.snippet.title}
+                                        description={video.snippet.description}
+                                        videoTags={video.snippet.tags || []}
+                                        videoDuration={video.formattedDuration}
+                                        onPress={() =>
+                                            navigation.navigate('VideoPlayerScreen', {
+                                                videoId: video.id,
+                                                title: video.snippet.title,
+                                                description: video.snippet.description,
+                                                videoTags: video.snippet.tags || [],
+                                            })
+                                        }
+                                    />
+                                ))}
+
+                                {/* Loading indicator for pagination */}
+                                {isLoadingMore && (
+                                    <View style={styles.paginationLoader}>
+                                        <ActivityIndicator size="small" color="#0000ff" />
+                                        <Text style={styles.loadingMoreText}>Cargando más videos...</Text>
+                                    </View>
+                                )}
+                            </>
                         ) : (
                             <Text style={styles.noResultsText}>No hay videos disponibles para esta categoría.</Text>
                         )}
@@ -185,6 +182,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         paddingTop: 16,
+        paddingBottom: 24,
         backgroundColor: '#FFFFFF',
     },
     tagsContainer: {
@@ -221,8 +219,23 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#666',
         textAlign: 'center',
-        marginTop: 20,
+        marginTop: 10,
     },
+    loaderContainer: {
+        marginTop: 40,
+        alignItems: 'center',
+    },
+    paginationLoader: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingVertical: 16,
+        gap: 8,
+    },
+    loadingMoreText: {
+        fontSize: 14,
+        color: '#666',
+    }
 });
 
 export default ExerciseScreen;

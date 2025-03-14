@@ -17,7 +17,13 @@ import { useNavigation } from '@react-navigation/native';
 import { getAuth, createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
 import { initializeApp } from 'firebase/app';
 import { firebaseConfig } from '../../firebaseConfig.js';
-import { configureGoogleSignIn, signInWithGoogle, signUp } from "../../GoogleAuthService"; // Importar signUp
+import { configureGoogleSignIn, useGoogleAuth, signInWithGoogleNative, signUp } from "../../GoogleAuthService";
+import Constants from 'expo-constants';
+
+import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
+
+WebBrowser.maybeCompleteAuthSession();
 
 const RegisterScreen = () => {
     const navigation = useNavigation();
@@ -38,6 +44,12 @@ const RegisterScreen = () => {
     // Inicializar Firebase
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
+
+    // Determinar si estamos en Expo Go
+    const isExpoGo = Constants.executionEnvironment === 'storeClient';
+
+    // Usar nuestro hook personalizado para Google Auth
+    const googleAuth = useGoogleAuth();
 
     useEffect(() => {
         configureGoogleSignIn();
@@ -161,9 +173,19 @@ const RegisterScreen = () => {
     const handleGoogleSignIn = async () => {
         setGoogleLoading(true);
         try {
-            await signInWithGoogle(navigation);
+            if (isExpoGo) {
+                // En Expo Go, usamos el método del hook
+                await googleAuth.signInWithGoogleExpo(navigation);
+            } else {
+                // En entorno nativo, usamos la función tradicional
+                await signInWithGoogleNative(navigation);
+            }
         } catch (error) {
-            console.log('Error manejado en LoginScreen:', error);
+            console.log('Error manejado en RegisterScreen:', error);
+            Alert.alert(
+                'Error de inicio de sesión',
+                'Ha ocurrido un error al iniciar sesión con Google.'
+            );
         } finally {
             setGoogleLoading(false);
         }
@@ -423,7 +445,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-       // marginTop: 20,
+        // marginTop: 20,
         paddingHorizontal: 20,
     },
     termsCheckbox: {

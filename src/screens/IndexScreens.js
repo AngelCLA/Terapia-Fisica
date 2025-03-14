@@ -1,12 +1,42 @@
-export {default as HomeScreen} from './HomeScreen';
-export {default as LoginScreen} from './LoginScreen';
-export {default as RegisterScreen} from './RegisterScreen';
-export {default as RegisterPhoneScreen} from './RegisterPhoneScreen';
-export {default as VerifyCodePhoneScreen} from './VerifyCodePhoneScreen';
-export {default as VerifyCodeEMailScreen} from './VerifyCodeEMailScreen';
-export {default as RegisterDataEmailScreen} from './RegisterDataEmailScreen';
-export {default as RegisterDataPhoneScreen} from './RegisterDataPhoneScreen';
-export {default as WelcomeScreen} from './WelcomeScreen';
-export {default as VideoCard} from '../components/VideoCard';
-export {default as VideoPlayerScreen} from './VideoPlayerScreen';
-export {default as ExerciseScreen} from './ExerciseScreen';
+// screens/IndexScreens.js
+import WelcomeScreen from './WelcomeScreen';
+import LoginScreen from './LoginScreen';
+import RegisterScreen from './RegisterScreen';
+import RegisterPhoneScreen from './RegisterPhoneScreen';
+import VerifyCodePhoneScreen from './VerifyCodePhoneScreen';
+import VerifyCodeEMailScreen from './VerifyCodeEMailScreen';
+import RegisterDataEmailScreen from './RegisterDataEmailScreen';
+import RegisterDataPhoneScreen from './RegisterDataPhoneScreen';
+import HomeScreen from './HomeScreen';
+import ExerciseScreen from './ExerciseScreen';
+import VideoPlayerScreen from './VideoPlayerScreen';
+
+// Exportación por defecto como objeto
+export default {
+    WelcomeScreen,
+    LoginScreen,
+    RegisterScreen,
+    RegisterPhoneScreen,
+    VerifyCodePhoneScreen,
+    VerifyCodeEMailScreen,
+    RegisterDataEmailScreen,
+    RegisterDataPhoneScreen,
+    HomeScreen,
+    ExerciseScreen,
+    VideoPlayerScreen,
+};
+
+// También mantener las exportaciones nombradas para compatibilidad
+export {
+    WelcomeScreen,
+    LoginScreen,
+    RegisterScreen,
+    RegisterPhoneScreen,
+    VerifyCodePhoneScreen,
+    VerifyCodeEMailScreen,
+    RegisterDataEmailScreen,
+    RegisterDataPhoneScreen,
+    HomeScreen,
+    ExerciseScreen,
+    VideoPlayerScreen,
+};

@@ -17,7 +17,8 @@ import {StatusBar} from 'expo-status-bar';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {Ionicons} from "@expo/vector-icons";
 import {Dropdown} from 'react-native-element-dropdown';
-import {SafeAreaProvider} from 'react-native-safe-area-context';
+import {SafeAreaProvider, useSafeAreaInsets} from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import VideoCard from '../components/VideoCard';
 
@@ -29,28 +30,37 @@ import {db} from '../../firebaseConfig';
 const Tab = createBottomTabNavigator();
 
 const data = [
-    {label: 'Ejercicio 1', value: 'Ejercicio 1'},
-    {label: 'Ejercicio 2', value: 'Ejercicio 2'},
-    {label: 'Ejercicio 3', value: 'Ejercicio 3'},
-    {label: 'Ejercicio 4', value: 'Ejercicio 4'},
-    {label: 'Ejercicio 5', value: 'Ejercicio 5'},
-    {label: 'Ejercicio 6', value: 'Ejercicio 6'},
-    {label: 'Ejercicio 7', value: 'Ejercicio 7'},
-    {label: 'Ejercicio 8', value: 'Ejercicio 8'},
+    {label: 'Brazo', value: 'Brazo'},
+    {label: 'Cardio', value: 'Cardio'},
+    {label: 'Flexibilidad', value: 'Flexibilidad'},
+    {label: 'Fuerza', value: 'Fuerza'},
+    {label: 'Rehabilitación', value: 'Rehabilitación'},
+    {label: 'Estiramientos', value: 'Estiramientos'},
+    {label: 'Pilates', value: 'Pilates'},
+    {label: 'Meditación', value: 'Meditación'},
 ];
 
+// Constants for YouTube API
+const CACHE_KEY = 'featured_youtube_videos_cache';
+const CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 horas en milisegundos
+const API_KEY = 'AIzaSyCHS1WP1pkc536u2iIwK3UrEaUsw9faVQA';
+const CHANNEL_ID = 'UCNJWe9sVinPkGd1KqGP45cA'; // Your channel ID
+
 const HomeScreen = ({navigation}) => {
+    const insets = useSafeAreaInsets();
     const [value, setValue] = useState(null);
     const [isFocus, setIsFocus] = useState(false);
     const [userData, setUserData] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [currentUser, setCurrentUser] = useState(null); // Add this line to track the auth user
+    const [currentUser, setCurrentUser] = useState(null);
+    const [featuredVideos, setFeaturedVideos] = useState([]);
+    const [videosLoading, setVideosLoading] = useState(true);
 
     useEffect(() => {
         const fetchData = async () => {
             const auth = getAuth();
             const user = auth.currentUser;
-            setCurrentUser(user); // Save the user to state
+            setCurrentUser(user);
 
             if (user) {
                 try {
@@ -72,19 +82,114 @@ const HomeScreen = ({navigation}) => {
         };
 
         fetchData();
+        loadFeaturedVideos();
     }, []);
 
-    // Now you can safely use currentUser
-    const displayName = userData ? userData.firstName : 'Guest';
+    // Format duration for YouTube ISO 8601 duration format
+    const formatDuration = (isoDuration) => {
+        const match = isoDuration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
+        const hours = (match[1] || '').replace('H', '');
+        const minutes = (match[2] || '').replace('M', '');
+        const seconds = (match[3] || '').replace('S', '');
+        return hours ? `${hours}:${minutes.padStart(2, '0')}:${seconds.padStart(2, '0')}` : `${minutes || '0'}:${seconds.padStart(2, '0')}`;
+    };
+
+    // Fetch videos directly from channel
+    const fetchChannelVideos = async () => {
+        try {
+            // Check cache first
+            const cachedVideos = await loadFromCache();
+            if (cachedVideos) {
+                return cachedVideos;
+            }
+
+            // If no cache, fetch from API
+            const response = await fetch(
+                `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${CHANNEL_ID}&maxResults=5&type=video&order=relevance&key=${API_KEY}`
+            );
+            const data = await response.json();
+
+            if (!data.items) return [];
+
+            const videoIds = data.items.map((video) => video.id.videoId).join(',');
+
+            const detailsResponse = await fetch(
+                `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id=${videoIds}&key=${API_KEY}`
+            );
+            const detailsData = await detailsResponse.json();
+
+            if (!detailsData.items) return [];
+
+            const formattedVideos = detailsData.items.map((video) => ({
+                ...video,
+                formattedDuration: formatDuration(video.contentDetails.duration),
+            }));
+
+            // Save to cache
+            await saveToCache(formattedVideos);
+
+            return formattedVideos;
+        } catch (error) {
+            console.error('Error fetching videos:', error);
+            return [];
+        }
+    };
+
+    // Cache management functions
+    const saveToCache = async (videosData) => {
+        try {
+            const cacheData = {
+                videos: videosData,
+                timestamp: Date.now(),
+            };
+            await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+        } catch (error) {
+            console.error('Error saving to cache:', error);
+        }
+    };
+
+    const loadFromCache = async () => {
+        try {
+            const cachedData = await AsyncStorage.getItem(CACHE_KEY);
+            if (cachedData) {
+                const {videos, timestamp} = JSON.parse(cachedData);
+                const isExpired = Date.now() - timestamp > CACHE_EXPIRY;
+
+                if (!isExpired) {
+                    return videos;
+                }
+            }
+            return null;
+        } catch (error) {
+            console.error('Error loading from cache:', error);
+            return null;
+        }
+    };
+
+    // Load featured videos for the home screen - now directly from your channel
+    const loadFeaturedVideos = async () => {
+        setVideosLoading(true);
+        try {
+            const channelVideos = await fetchChannelVideos();
+            if (channelVideos && channelVideos.length > 0) {
+                setFeaturedVideos(channelVideos);
+            }
+        } catch (error) {
+            console.error('Error loading featured videos:', error);
+        } finally {
+            setVideosLoading(false);
+        }
+    };
 
     if (loading) {
         return <ActivityIndicator size="large" color="#0000ff"/>;
     }
+
     return (
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
             <SafeAreaProvider style={{flex: 1, backgroundColor: '#fff'}}>
-                <StatusBar style="auto"/>
-                <View style={styles.container}>
+                <StatusBar style="dark" />
+                <View style={[styles.containerFixed, { paddingTop: insets.top }]}>
                     {/* Header */}
                     <View style={styles.titleContainer}>
                         <View style={styles.textContainer}>
@@ -97,7 +202,12 @@ const HomeScreen = ({navigation}) => {
                         </View>
                         <Image source={require('../assets/avatar2.png')} style={styles.image}/>
                     </View>
-                    <ScrollView contentContainerStyle={{flexGrow: 1, paddingBottom: 20}}>
+
+                    <ScrollView
+                        style={styles.scrollView}
+                        contentContainerStyle={styles.scrollViewContent}
+                        showsVerticalScrollIndicator={true}
+                    >
                         <View>
                             {/* Ejercicio Perfecto Section */}
                             <View style={{
@@ -186,102 +296,111 @@ const HomeScreen = ({navigation}) => {
 
                             {/* ========== Sección de videos ========== */}
                             <View>
-                                <VideoCard
-                                    onPress={() => {
-                                        console.log("Navegando a VideoPlayerScreen...");
-                                        navigation.navigate("VideoPlayerScreen", {
-                                            videoId,
-                                            title: videoTitle,
-                                            description: videoDescription,
-                                            videoTags,
-                                        });
-                                        console.log("Video seleccionado:", videoId);
-                                    }}
-                                    thumbnailSource={require('../assets/yogaHuman.png')}
-                                    duration="00:00"
-                                    title="Example Video"
-                                    description="Example description"
-                                    videoId="17VnGoUxt5Y"  // Esto ya está bien como prop
-                                    style={{marginTop: 20, flex: 1}} // Estilo personalizado
-                                />
+                                <Text style={styles.sectionTitle}>Videos recomendados</Text>
 
+                                {videosLoading ? (
+                                    <ActivityIndicator size="large" color="#0000ff" style={{marginTop: 20}} />
+                                ) : featuredVideos.length > 0 ? (
+                                    <>
+                                        {/* First featured video (larger) */}
+                                        {featuredVideos[0] && (
+                                            <VideoCard
+                                                videoId={featuredVideos[0].id}
+                                                title={featuredVideos[0].snippet.title}
+                                                description={featuredVideos[0].snippet.description}
+                                                videoTags={featuredVideos[0].snippet.tags || []}
+                                                videoDuration={featuredVideos[0].formattedDuration}
+                                                style={{marginTop: 20}}
+                                                onPress={() => {
+                                                    navigation.navigate("VideoPlayerScreen", {
+                                                        videoId: featuredVideos[0].id,
+                                                        title: featuredVideos[0].snippet.title,
+                                                        description: featuredVideos[0].snippet.description,
+                                                        videoTags: featuredVideos[0].snippet.tags || [],
+                                                    });
+                                                }}
+                                            />
+                                        )}
 
-                                {/* ========== Cards en 2 columnas ========== */}
-                                <View style={{
-                                    flexDirection: 'row',
-                                    justifyContent: 'space-between',
-                                    gap: 16,
-                                    marginBottom: 20
-                                }}>
-                                    <VideoCard
-                                        onPress={() => {
-                                            navigation.navigate('VideoPlayerScreen', {
-                                                title: 'Example Video 2',
-                                                description: 'Example description',
-                                                videoId: 'Dlm0HsTEsuA'
-                                            });
-                                        }}
-                                        thumbnailSource={require('../assets/yogaHuman.png')}
-                                        duration="00:00"
-                                        title="Example Video 2"
-                                        description="Example description"
-                                        videoId="Dlm0HsTEsuA"  // También pásarlo como prop
-                                        style={{marginTop: 20, flex: 1}}
-                                    />
+                                        {/* Cards en 2 columnas */}
+                                        {featuredVideos.length > 1 && (
+                                            <View style={{
+                                                flexDirection: 'row',
+                                                justifyContent: 'space-between',
+                                                gap: 16,
+                                                marginTop: 20
+                                            }}>
+                                                {/* Primer video de la columna */}
+                                                {featuredVideos[1] && (
+                                                    <VideoCard
+                                                        videoId={featuredVideos[1].id}
+                                                        title={featuredVideos[1].snippet.title}
+                                                        description={featuredVideos[1].snippet.description}
+                                                        videoTags={featuredVideos[1].snippet.tags || []}
+                                                        videoDuration={featuredVideos[1].formattedDuration}
+                                                        style={{flex: 1}}
+                                                        onPress={() => {
+                                                            navigation.navigate("VideoPlayerScreen", {
+                                                                videoId: featuredVideos[1].id,
+                                                                title: featuredVideos[1].snippet.title,
+                                                                description: featuredVideos[1].snippet.description,
+                                                                videoTags: featuredVideos[1].snippet.tags || [],
+                                                            });
+                                                        }}
+                                                    />
+                                                )}
 
-                                    <VideoCard
-                                        onPress={() => {
-                                            navigation.navigate('VideoPlayerScreen', {
-                                                title: 'Example Video 3',
-                                                description: 'Example description',
-                                                videoId: 'Jr5MjhgPz_c'
-                                            });
-                                        }}
-                                        thumbnailSource={require('../assets/yogaHuman.png')}
-                                        duration="00:00"
-                                        title="Example Video 3"
-                                        description="Example description"
-                                        videoId="Jr5MjhgPz_c"  // También pásarlo como prop
-                                        style={{marginTop: 20, flex: 1}}
-                                    />
-                                </View>
+                                                {/* Segundo video de la columna */}
+                                                {featuredVideos[2] && (
+                                                    <VideoCard
+                                                        videoId={featuredVideos[2].id}
+                                                        title={featuredVideos[2].snippet.title}
+                                                        description={featuredVideos[2].snippet.description}
+                                                        videoTags={featuredVideos[2].snippet.tags || []}
+                                                        videoDuration={featuredVideos[2].formattedDuration}
+                                                        style={{flex: 1}}
+                                                        onPress={() => {
+                                                            navigation.navigate("VideoPlayerScreen", {
+                                                                videoId: featuredVideos[2].id,
+                                                                title: featuredVideos[2].snippet.title,
+                                                                description: featuredVideos[2].snippet.description,
+                                                                videoTags: featuredVideos[2].snippet.tags || [],
+                                                            });
+                                                        }}
+                                                    />
+                                                )}
+                                            </View>
+                                        )}
 
-
-                                {/* ========== Card de video ========== */}
-                                <View style={styles.inputTitleContainer}>
-                                    <Image source={require('../assets/yogaHuman.png')}
-                                           style={{borderRadius: 10, width: '40%', height: 140}}/>
-
-                                    <Text style={{
-                                        color: '#333',
-                                        fontSize: 18,
-                                        fontWeight: '800',
-                                        marginBottom: 15,
-                                        marginLeft: 15,
-                                        width: '60%'
-                                    }}>
-                                        ¡Encuentra el ejercicio perfecto{' '}
-                                        <Text style={{color: '#1089FF'}}>para ti</Text>!
-                                    </Text>
-                                </View>
-
-
-                                <View style={styles.inputTitleContainer}>
-                                    <Image source={require('../assets/yogaHuman.png')}
-                                           style={{borderRadius: 10, width: '40%', height: 140}}/>
-
-                                    <Text style={{
-                                        color: '#333',
-                                        fontSize: 18,
-                                        fontWeight: '800',
-                                        marginBottom: 15,
-                                        marginLeft: 15,
-                                        width: '60%'
-                                    }}>
-                                        ¡This card is a{' '}
-                                        <Text style={{color: '#1089FF'}}>test</Text>!
-                                    </Text>
-                                </View>
+                                        {/* Additional videos */}
+                                        {featuredVideos.length > 3 && (
+                                            <>
+                                                <Text style={[styles.sectionTitle, {marginTop: 24}]}>Videos populares</Text>
+                                                {featuredVideos.slice(3).map((video, index) => (
+                                                    <VideoCard
+                                                        key={index}
+                                                        videoId={video.id}
+                                                        title={video.snippet.title}
+                                                        description={video.snippet.description}
+                                                        videoTags={video.snippet.tags || []}
+                                                        videoDuration={video.formattedDuration}
+                                                        style={{marginTop: 16}}
+                                                        onPress={() => {
+                                                            navigation.navigate("VideoPlayerScreen", {
+                                                                videoId: video.id,
+                                                                title: video.snippet.title,
+                                                                description: video.snippet.description,
+                                                                videoTags: video.snippet.tags || [],
+                                                            });
+                                                        }}
+                                                    />
+                                                ))}
+                                            </>
+                                        )}
+                                    </>
+                                ) : (
+                                    <Text style={styles.noResultsText}>No hay videos disponibles ahora.</Text>
+                                )}
                             </View>
                         </View>
                     </ScrollView>
@@ -292,6 +411,7 @@ const HomeScreen = ({navigation}) => {
 };
 
 const ProfileScreen = ({navigation}) => {
+    const insets = useSafeAreaInsets(); // Obtener los insets de SafeArea
     const [userData, setUserData] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -331,7 +451,7 @@ const ProfileScreen = ({navigation}) => {
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
             <SafeAreaView style={{flex: 1, backgroundColor: '#fff'}}>
                 <StatusBar style="auto"/>
-                <View style={styles.container}>
+                <View style={[styles.container, { paddingTop: insets.top }]}>
                     {/* Header */}
                     <View style={styles.titleContainer}>
                         <View style={styles.textContainer}>
@@ -340,18 +460,18 @@ const ProfileScreen = ({navigation}) => {
                         </View>
                         <Image source={require('../assets/avatar2.png')} style={styles.image}/>
                     </View>
-                        <View>
-                            <Text>Nombre: {userData?.firstName}</Text>
-                            <Text>Apellido: {userData?.lastName}</Text>
-                            <Text>Teléfono: {userData?.phone}</Text>
-                            <Text>Dirección: {userData?.address}</Text>
-                            <Text>Correo electrónico: {userData?.email}</Text>
-                            <Text>Genero: {userData?.genero}</Text>
-                            <Text>Edad: {userData?.edad}</Text>
-                            <Text>Peso: {userData?.peso}</Text>
-                            <Text>Estatura: {userData?.estatura}</Text>
-                            <Text>Padecimiento: {userData?.padecimiento}</Text>
-                        </View>
+                    <View>
+                        <Text>Nombre: {userData?.firstName}</Text>
+                        <Text>Apellido: {userData?.lastName}</Text>
+                        <Text>Teléfono: {userData?.phone}</Text>
+                        <Text>Dirección: {userData?.address}</Text>
+                        <Text>Correo electrónico: {userData?.email}</Text>
+                        <Text>Genero: {userData?.genero}</Text>
+                        <Text>Edad: {userData?.edad}</Text>
+                        <Text>Peso: {userData?.peso}</Text>
+                        <Text>Estatura: {userData?.estatura}</Text>
+                        <Text>Padecimiento: {userData?.padecimiento}</Text>
+                    </View>
                 </View>
             </SafeAreaView>
         </TouchableWithoutFeedback>
@@ -392,18 +512,25 @@ const MyTabs = () => {
     );
 };
 
-// Este es el componente principal. No es necesario envolver con un NavigationContainer aquí.
 export default MyTabs;
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
         backgroundColor: '#FFFFFF',
         paddingHorizontal: 16,
-        position: 'fixed',
-        top: 50,
+    },
+    containerFixed: {
+        flex: 1,
+        backgroundColor: '#FFFFFF',
+        paddingHorizontal: 16,
+    },
+    scrollView: {
+        flex: 1,
+        width: '100%',
+    },
+    scrollViewContent: {
+        paddingBottom: 120, // Espacio adicional en la parte inferior
     },
     content: {
         width: '100%',
@@ -418,6 +545,13 @@ const styles = StyleSheet.create({
         color: '#000',
         marginBottom: 5,
     },
+    sectionTitle: {
+        fontSize: 22,
+        fontWeight: '700',
+        color: '#333',
+        marginTop: 24,
+        marginBottom: 8,
+    },
     titleContainer: {
         width: '100%',
         flexDirection: 'row',
@@ -427,13 +561,13 @@ const styles = StyleSheet.create({
         paddingBottom: 20,
     },
     textContainer: {
-        flex: 1, // Toma el espacio disponible
-        alignItems: 'flex-start', // Alinea el texto a la izquierda
+        flex: 1,
+        alignItems: 'flex-start',
     },
     image: {
-        width: 60,  // Ajusta el tamaño de la imagen según lo necesites
+        width: 60,
         height: 60,
-        marginLeft: 10,  // Separación entre el texto y la imagen
+        marginLeft: 10,
         borderRadius: 20,
     },
     buttonContainer: {
@@ -476,16 +610,16 @@ const styles = StyleSheet.create({
         fontWeight: "500",
     },
     inputTitleContainer: {
-        flexDirection: 'row', // Posiciona los elementos en línea
-        alignItems: 'center', // Alinea verticalmente
+        flexDirection: 'row',
+        alignItems: 'center',
         borderRadius: 10,
         paddingVertical: 5,
         maxWidth: '100%',
         marginBottom: 10,
     },
     inputContainer: {
-        flexDirection: 'row', // Posiciona los elementos en línea
-        alignItems: 'center', // Alinea verticalmente
+        flexDirection: 'row',
+        alignItems: 'center',
         borderRadius: 10,
         paddingHorizontal: 10,
         paddingVertical: 5,
@@ -494,14 +628,20 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
     },
     input: {
-        flex: 1, // Toma el espacio restante
+        flex: 1,
         fontSize: 16,
         color: '#333',
         marginLeft: 10,
     },
+    noResultsText: {
+        fontSize: 16,
+        color: '#666',
+        textAlign: 'center',
+        marginTop: 20,
+    },
     //============ Estilos de DropDown ============//
     dropdownContainer: {
-        marginVertical: 5, // Espaciado entre el dropdown y otros elementos
+        marginVertical: 5,
     },
     dropdown: {
         height: 55,
@@ -526,7 +666,6 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
         borderColor: '#FFF',
         borderWidth: 1,
-
     },
     iconStyle: {
         width: 20,
@@ -538,5 +677,4 @@ const styles = StyleSheet.create({
         color: '#333',
         marginBottom: 5,
     },
-
 });
