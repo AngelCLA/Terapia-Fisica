@@ -23,6 +23,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import VideoCard from '../components/VideoCard';
 import YouTubeService from '../services/YoutubeService';
 
+import CategorySection from '../components/CategorySection';
+
 import {getDoc, doc} from 'firebase/firestore';
 import {getAuth} from 'firebase/auth';
 import {db} from '../../firebaseConfig';
@@ -217,6 +219,11 @@ const HomeScreen = ({navigation}) => {
                                     <Ionicons name="file-tray-stacked" size={24} color="black"/>
                                     <Text style={styles.buttonText}>Datos</Text>
                                 </Pressable>
+                            </View>
+
+                            {/* ========== Sección de categorias ========== */}
+                            <View>
+                                <CategorySection navigation={navigation} />
                             </View>
 
                             {/* ========== Sección de videos ========== */}
