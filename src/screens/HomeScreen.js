@@ -34,13 +34,14 @@ const Tab = createBottomTabNavigator();
 
 const data = [
     {label: 'Brazo', value: 'Brazo'},
-    {label: 'Cardio', value: 'Cardio'},
-    {label: 'Flexibilidad', value: 'Flexibilidad'},
-    {label: 'Fuerza', value: 'Fuerza'},
-    {label: 'Rehabilitación', value: 'Rehabilitación'},
-    {label: 'Estiramientos', value: 'Estiramientos'},
-    {label: 'Pilates', value: 'Pilates'},
-    {label: 'Meditación', value: 'Meditación'},
+    {label: 'Cadera', value: 'Cadera'},
+    {label: 'Codo', value: 'Codo'},
+    {label: 'Dedos de la mano', value: 'Dedos de la mano'},
+    {label: 'Dedos de los pies', value: 'Dedos de los pies'},
+    {label: 'Hombro', value: 'Hombro'},
+    {label: 'Muñeca', value: 'Muñeca'},
+    {label: 'Rodilla', value: 'Rodilla'},
+    {label: 'Tobillo', value: 'Tobillo'},
 ];
 
 const HomeScreen = ({navigation}) => {
@@ -156,7 +157,7 @@ const HomeScreen = ({navigation}) => {
                                         width: '60%'
                                     }}>
                                         ¡Encuentra el ejercicio perfecto{' '}
-                                        <Text style={{color: '#1089FF'}}>para ti</Text>!
+                                        <Text style={{color: '#1089FF'}}>para tu pequeño</Text>!
                                     </Text>
                                     <Image source={require('../assets/yoga.png')}
                                            style={{borderRadius: 10, width: '40%', height: 140}}/>
