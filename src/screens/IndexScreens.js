@@ -10,7 +10,9 @@ import RegisterDataPhoneScreen from './RegisterDataPhoneScreen';
 import HomeScreen from './HomeScreen';
 import ExerciseScreen from './ExerciseScreen';
 import VideoPlayerScreen from './VideoPlayerScreen';
-
+import StageExercisesScreen from './StageExercisesScreen';
+import StageCategoriesScreen from './StageCategoriesScreen';
+import ProgressScreen from "../screens/ProgressScreen";
 // Exportación por defecto como objeto
 export default {
     WelcomeScreen,
@@ -24,6 +26,9 @@ export default {
     HomeScreen,
     ExerciseScreen,
     VideoPlayerScreen,
+    StageExercisesScreen,
+    StageCategoriesScreen,
+    ProgressScreen,
 };
 
 // También mantener las exportaciones nombradas para compatibilidad
@@ -39,4 +44,7 @@ export {
     HomeScreen,
     ExerciseScreen,
     VideoPlayerScreen,
+    StageExercisesScreen,
+    StageCategoriesScreen,
+    ProgressScreen,
 };

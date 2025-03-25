@@ -9,7 +9,7 @@
     "splash": {
       "image": "./src/assets/splash-logo.png",
       "resizeMode": "contain",
-      "backgroundColor": "#7469B6"
+      "backgroundColor": "#f6f6f6"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -24,7 +24,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./src/assets/splash-logo.png",
-        "backgroundColor": "#7469B6"
+        "backgroundColor": "#f6f6f6"
       },
       "package": "com.terapiafisica.app",
       "googleServicesFile": "./google-services.json",

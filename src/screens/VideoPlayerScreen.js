@@ -4,6 +4,7 @@ import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {StatusBar} from "expo-status-bar";
 import YouTubeIframe from 'react-native-youtube-iframe';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import ActivityCompletionButton from '../components/ActivityCompletionButton';
 
 const COMPLETED_VIDEOS_KEY = 'completed_videos';
 
@@ -142,27 +143,17 @@ const VideoPlayerScreen = ({route, navigation}) => {
                         </View>
                     )}
 
-                    <View style={styles.buttonContainer}>
-                        <Pressable
-                            onPress={markVideoAsCompleted}
-                            disabled={!videoCompleted}
-                            style={({pressed}) => [
-                                styles.button,
-                                {
-                                    backgroundColor: videoCompleted
-                                        ? (pressed ? '#005AE2' : '#007AFF')
-                                        : '#D1D5DB',
-                                    opacity: videoCompleted ? 1 : 0.8,
-                                }
-                            ]}
-                        >
-                            <Text style={[
-                                styles.buttonText,
-                                {color: videoCompleted ? '#FFFFFF' : '#666666'}
-                            ]}>
-                                {videoCompleted ? 'Marcar como realizado' : 'Ver video completo para marcar'}
-                            </Text>
-                        </Pressable>
+                    <View style={styles.completionContainer}>
+                        <ActivityCompletionButton
+                            activity={{
+                                videoId: videoId,
+                                videoTitle: title,
+                                categoryId: route.params?.categoryId || 'general',
+                                categoryTitle: route.params?.categoryTitle || 'General',
+                                stageId: route.params?.stageId || 'Etapa 1',
+                                stageTitle: route.params?.stageTitle || 'Etapa 1 (0-3 meses)'
+                            }}
+                        />
                     </View>
                 </ScrollView>
             </SafeAreaProvider>
@@ -241,7 +232,7 @@ const styles = StyleSheet.create({
     buttonContainer: {
         padding: 16,
         paddingBottom: 32,
-        alignItems: 'center',
+        alignItems: 'stretch',
     },
     button: {
         paddingVertical: 12,
@@ -253,6 +244,10 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '600',
         textAlign: 'center',
+    },
+    completionContainer: {
+        marginVertical: 16,
+        paddingHorizontal: 16,
     },
 });
 

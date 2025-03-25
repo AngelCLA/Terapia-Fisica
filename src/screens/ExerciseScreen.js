@@ -21,17 +21,13 @@ const categoryConfig = {
         color: "#4A90E2",
         bgColor: "#E6F0FD"
     },
-    "Brazo": {
+    "Cadera": {
         color: "#3DD6BA",
         bgColor: "#e8fcf8"
     },
-    "Cadera": {
+    "Codo": {
         color: "#FF8A5C",
         bgColor: "#FFF1E6"
-    },
-    "Codo": {
-        color: "#FFC633",
-        bgColor: "#FFF9E6"
     },
     "Dedos de la mano": {
         color: "#1089FF",
@@ -320,9 +316,9 @@ const styles = StyleSheet.create({
     },
     categoryChip: {
         margin: 4,
-        paddingVertical: 12,
-        paddingHorizontal: 16,
-        borderRadius: 16,
+        paddingVertical: 10,
+        paddingHorizontal: 12,
+        borderRadius: 12,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.05,

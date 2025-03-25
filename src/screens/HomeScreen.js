@@ -7,23 +7,20 @@ import {
     ScrollView,
     StyleSheet,
     Text,
-    TextInput,
     TouchableWithoutFeedback,
     View,
-    ActivityIndicator
+    ActivityIndicator,
+    TouchableOpacity
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {StatusBar} from 'expo-status-bar';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {Ionicons} from "@expo/vector-icons";
-import {Dropdown} from 'react-native-element-dropdown';
+import {MaterialCommunityIcons} from "@expo/vector-icons";
 import {SafeAreaProvider, useSafeAreaInsets} from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import VideoCard from '../components/VideoCard';
 import YouTubeService from '../services/YoutubeService';
-
-import CategorySection from '../components/CategorySection';
 
 import {getDoc, doc} from 'firebase/firestore';
 import {getAuth} from 'firebase/auth';
@@ -32,27 +29,22 @@ import {db} from '../../firebaseConfig';
 // Definir el Tab.Navigator y las pantallas
 const Tab = createBottomTabNavigator();
 
-const data = [
-    {label: 'Brazo', value: 'Brazo'},
-    {label: 'Cadera', value: 'Cadera'},
-    {label: 'Codo', value: 'Codo'},
-    {label: 'Dedos de la mano', value: 'Dedos de la mano'},
-    {label: 'Dedos de los pies', value: 'Dedos de los pies'},
-    {label: 'Hombro', value: 'Hombro'},
-    {label: 'Muñeca', value: 'Muñeca'},
-    {label: 'Rodilla', value: 'Rodilla'},
-    {label: 'Tobillo', value: 'Tobillo'},
+// Definir las etapas de vida disponibles
+const etapasVida = [
+    { id: 'Etapa 1', titulo: 'Etapa 1', rango: '0-3 meses', edadMedia: 2, color: '#FF6B8B', colorEnd: '#FF9F9F' },
+    { id: 'Etapa 2', titulo: 'Etapa 2', rango: '4-6 meses', edadMedia: 5, color: '#49A7FF', colorEnd: '#6DBDFF' },
+    { id: 'Etapa 3', titulo: 'Etapa 3', rango: '7-9 meses', edadMedia: 8, color: '#77DD77', colorEnd: '#B4FF9F' },
+    { id: 'Etapa 4', titulo: 'Etapa 4', rango: '10-12 meses', edadMedia: 11, color: '#FFA94D', colorEnd: '#FFD59F' }
 ];
 
 const HomeScreen = ({navigation}) => {
     const insets = useSafeAreaInsets();
-    const [value, setValue] = useState(null);
-    const [isFocus, setIsFocus] = useState(false);
     const [userData, setUserData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [currentUser, setCurrentUser] = useState(null);
     const [featuredVideos, setFeaturedVideos] = useState([]);
     const [videosLoading, setVideosLoading] = useState(true);
+    const [currentEtapa, setCurrentEtapa] = useState(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -64,7 +56,24 @@ const HomeScreen = ({navigation}) => {
                 try {
                     const userDoc = await getDoc(doc(db, 'users', user.uid));
                     if (userDoc.exists()) {
-                        setUserData(userDoc.data());
+                        const userDocData = userDoc.data();
+                        setUserData(userDocData);
+
+                        // Determinar la etapa actual basada en la edad guardada en el perfil
+                        const edadMeses = parseInt(userDocData.edad || '0');
+                        let etapaId = 'Etapa 1'; // Valor por defecto
+
+                        if (edadMeses >= 0 && edadMeses < 4) {
+                            etapaId = 'Etapa 1';
+                        } else if (edadMeses >= 4 && edadMeses < 7) {
+                            etapaId = 'Etapa 2';
+                        } else if (edadMeses >= 7 && edadMeses < 10) {
+                            etapaId = 'Etapa 3';
+                        } else if (edadMeses >= 10) {
+                            etapaId = 'Etapa 4';
+                        }
+
+                        setCurrentEtapa(etapaId);
                     } else {
                         console.log('No se encontraron datos para este usuario.');
                     }
@@ -83,15 +92,18 @@ const HomeScreen = ({navigation}) => {
         loadFeaturedVideos();
     }, []);
 
+    // Función para obtener la etapa actual completa
+    const getCurrentEtapaData = () => {
+        return etapasVida.find(etapa => etapa.id === currentEtapa) || etapasVida[0];
+    };
+
     // Cargar videos destacados para la pantalla de inicio
     const loadFeaturedVideos = async () => {
         setVideosLoading(true);
         try {
-            // Usar el servicio optimizado para cargar los videos
-            // No forzamos la actualización, siempre usamos caché si está disponible
             const result = await YouTubeService.getVideos({
-                maxResults: 5,  // Solo necesitamos unos pocos para la página principal
-                forceRefresh: false  // Usar caché si está disponible
+                maxResults: 5,
+                forceRefresh: false
             });
 
             if (result && result.videos && result.videos.length > 0) {
@@ -104,18 +116,26 @@ const HomeScreen = ({navigation}) => {
         }
     };
 
-    // Función para manejar la selección de categoría desde el dropdown
-    const handleCategorySelect = (item) => {
-        setValue(item.value);
-        setIsFocus(false);
-        console.log('Ha elegido el "' + item.value + '"');
-        // Navegar a la pantalla de ejercicios con la categoría seleccionada
-        navigation.navigate('ExerciseScreen', { selectedCategory: item.value });
+    // Navegación a ejercicios específicos por etapa
+    const navigateToEtapaExercises = () => {
+        if (currentEtapa) {
+            const etapaData = getCurrentEtapaData();
+            navigation.navigate('StageCategoriesScreen', {
+                stageId: etapaData.id,
+                stageTitle: `${etapaData.titulo} (${etapaData.rango})`
+            });
+        } else {
+            // Si no hay etapa seleccionada, ir a la selección de etapas
+            navigation.navigate('StageSelection');
+        }
     };
 
     if (loading) {
         return <ActivityIndicator size="large" color="#0000ff"/>;
     }
+
+    // Obtener datos de la etapa actual
+    const etapaActual = getCurrentEtapaData();
 
     return (
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -141,64 +161,47 @@ const HomeScreen = ({navigation}) => {
                         showsVerticalScrollIndicator={true}
                     >
                         <View>
-                            {/* Ejercicio Perfecto Section */}
-                            <View style={{
-                                padding: 10,
-                                paddingVertical: 20,
-                                backgroundColor: '#EDF6FD',
-                                borderRadius: 10
-                            }}>
-                                <View style={styles.inputTitleContainer}>
-                                    <Text style={{
-                                        color: '#333',
-                                        fontSize: 28,
-                                        fontWeight: '800',
-                                        marginBottom: 15,
-                                        width: '60%'
-                                    }}>
-                                        ¡Encuentra el ejercicio perfecto{' '}
-                                        <Text style={{color: '#1089FF'}}>para tu pequeño</Text>!
-                                    </Text>
-                                    <Image source={require('../assets/yoga.png')}
-                                           style={{borderRadius: 10, width: '40%', height: 140}}/>
+                            {/* Sección con la etapa actual del bebé */}
+                            <View style={[styles.currentStageContainer, { backgroundColor: etapaActual.color }]}>
+                                <View style={styles.stageHeaderContent}>
+                                    <View style={styles.stageTextContainer}>
+                                        <Text style={styles.currentStageTitle}>
+                                            Etapa actual de desarrollo
+                                        </Text>
+                                        <Text style={styles.currentStageLabel}>
+                                            {etapaActual.titulo}: {etapaActual.rango}
+                                        </Text>
+                                        <Text style={styles.currentStageDescription}>
+                                            Ejercicios personalizados para bebés de {etapaActual.rango}
+                                        </Text>
+                                    </View>
+                                    <View style={styles.babyIconContainer}>
+                                        <MaterialCommunityIcons name="human-child" size={50} color="#FFFFFF" />
+                                    </View>
                                 </View>
 
-                                {/* Dropdown - Search */}
-                                <View style={styles.dropdownContainer}>
-                                    <Dropdown
-                                        style={[styles.dropdown, isFocus && {borderColor: '#1089FF'}]}
-                                        placeholderStyle={styles.placeholderStyle}
-                                        selectedTextStyle={styles.selectedTextStyle}
-                                        inputSearchStyle={styles.inputSearchStyle}
-                                        iconStyle={styles.iconStyle}
-                                        data={data}
-                                        search
-                                        maxHeight={400}
-                                        labelField="label"
-                                        valueField="value"
-                                        placeholder={!isFocus ? 'Buscar' : 'Buscando...'}
-                                        searchPlaceholder="Buscar..."
-                                        value={value}
-                                        onFocus={() => setIsFocus(true)}
-                                        onBlur={() => setIsFocus(false)}
-                                        onChange={handleCategorySelect}
-                                        renderLeftIcon={() => (
-                                            <Ionicons
-                                                name="search-outline"
-                                                size={20}
-                                                color={'#888'}
-                                                style={{marginRight: 5}}
-                                            />
-                                        )}
-                                    />
-                                </View>
+                                <TouchableOpacity
+                                    style={styles.stageActionButton}
+                                    onPress={navigateToEtapaExercises}
+                                >
+                                    <Text style={styles.stageActionButtonText}>Ver ejercicios recomendados</Text>
+                                    <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={styles.changeStageButton}
+                                    onPress={() => navigation.navigate('StageSelection')}
+                                >
+                                    <Text style={styles.changeStageButtonText}>Cambiar etapa</Text>
+                                </TouchableOpacity>
                             </View>
 
-                            {/* Botones - Opciones generales */}
-                            <View style={{flexDirection: "row", justifyContent: "space-between", marginTop: 20}}>
+                            {/* Botones - Opciones rápidas */}
+                            <Text style={styles.sectionTitle}>Acceso rápido</Text>
+                            <View style={{flexDirection: "row", justifyContent: "space-between"}}>
                                 <Pressable
                                     style={styles.button}
-                                    onPress={() => navigation.navigate('ExerciseScreen')}
+                                    onPress={navigateToEtapaExercises}
                                     accessibilityLabel={"Ir a la pantalla de Ejercicios"}
                                 >
                                     <Ionicons name="barbell" size={24} color="black"/>
@@ -222,14 +225,9 @@ const HomeScreen = ({navigation}) => {
                                 </Pressable>
                             </View>
 
-                            {/* ========== Sección de categorias ========== */}
-                            <View>
-                                <CategorySection navigation={navigation} />
-                            </View>
-
                             {/* ========== Sección de videos ========== */}
                             <View>
-                                <Text style={styles.sectionTitle}>Videos recomendados</Text>
+                                <Text style={styles.sectionTitle}>Videos recomendados para {etapaActual.rango}</Text>
 
                                 {videosLoading ? (
                                     <ActivityIndicator size="large" color="#0000ff" style={{marginTop: 20}} />
@@ -304,37 +302,39 @@ const HomeScreen = ({navigation}) => {
                                                 )}
                                             </View>
                                         )}
-
-                                        {/* Additional videos */}
-                                        {featuredVideos.length > 3 && (
-                                            <>
-                                                <Text style={[styles.sectionTitle, {marginTop: 24}]}>Videos populares</Text>
-                                                {featuredVideos.slice(3).map((video, index) => (
-                                                    <VideoCard
-                                                        key={index}
-                                                        videoId={video.id}
-                                                        title={video.snippet.title}
-                                                        description={video.snippet.description}
-                                                        videoTags={video.snippet.tags || []}
-                                                        videoDuration={video.formattedDuration}
-                                                        style={{marginTop: 16}}
-                                                        onPress={() => {
-                                                            navigation.navigate("VideoPlayerScreen", {
-                                                                videoId: video.id,
-                                                                title: video.snippet.title,
-                                                                description: video.snippet.description,
-                                                                videoTags: video.snippet.tags || [],
-                                                            });
-                                                        }}
-                                                    />
-                                                ))}
-                                            </>
-                                        )}
                                     </>
                                 ) : (
                                     <Text style={styles.noResultsText}>No hay videos disponibles ahora.</Text>
                                 )}
                             </View>
+
+                            {/* Otras etapas */}
+                            <Text style={styles.sectionTitle}>Explorar otras etapas</Text>
+                            <ScrollView
+                                horizontal={true}
+                                showsHorizontalScrollIndicator={false}
+                                contentContainerStyle={styles.otherStagesScrollContent}
+                            >
+                                {etapasVida.map((etapa) => {
+                                    // Omitir la etapa actual
+                                    if (etapa.id === currentEtapa) return null;
+
+                                    return (
+                                        <TouchableOpacity
+                                            key={etapa.id}
+                                            style={[styles.otherStageCard, {backgroundColor: etapa.color}]}
+                                            onPress={() => navigation.navigate('StageCategoriesScreen', {
+                                                stageId: etapa.id,
+                                                stageTitle: `${etapa.titulo} (${etapa.rango})`
+                                            })}
+                                        >
+                                            <Text style={styles.otherStageTitle}>{etapa.titulo}</Text>
+                                            <Text style={styles.otherStageRange}>{etapa.rango}</Text>
+                                            <Ionicons name="arrow-forward-circle" size={24} color="#FFFFFF" style={styles.otherStageIcon} />
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </ScrollView>
                         </View>
                     </ScrollView>
                 </View>
@@ -343,116 +343,7 @@ const HomeScreen = ({navigation}) => {
     );
 };
 
-const ProfileScreen = ({navigation}) => {
-    const insets = useSafeAreaInsets(); // Obtener los insets de SafeArea
-    const [userData, setUserData] = useState(null);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        const fetchData = async () => {
-            const auth = getAuth();
-            const user = auth.currentUser;
-
-
-            if (user) {
-                try {
-                    const userDoc = await getDoc(doc(db, 'users', user.uid));
-                    if (userDoc.exists()) {
-                        setUserData(userDoc.data());
-                    } else {
-                        console.log('No se encontraron datos para este usuario.');
-                    }
-                } catch (error) {
-                    console.log('Error al recuperar los datos:', error);
-                } finally {
-                    setLoading(false);
-                }
-            } else {
-                console.log('No hay un usuario autenticado.');
-                setLoading(false);
-            }
-        };
-
-        fetchData();
-    }, []);
-
-    if (loading) {
-        return <ActivityIndicator size="large" color="#0000ff"/>;
-    }
-
-    return (
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <SafeAreaView style={{flex: 1, backgroundColor: '#fff'}}>
-                <StatusBar style="auto"/>
-                <View style={[styles.container, { paddingTop: insets.top }]}>
-                    {/* Header */}
-                    <View style={styles.titleContainer}>
-                        <View style={styles.textContainer}>
-                            <Text style={{color: '#444444', fontSize: 20, fontWeight: '400'}}>👏 Bienvenido,</Text>
-                            <Text style={styles.title}>{userData.firstName}{' '}{userData.lastName}</Text>
-                        </View>
-                        <Image source={require('../assets/avatar2.png')} style={styles.image}/>
-                    </View>
-                    <View>
-                        <Text>Nombre: {userData?.firstName}</Text>
-                        <Text>Apellido: {userData?.lastName}</Text>
-                        <Text>Teléfono: {userData?.phone}</Text>
-                        <Text>Dirección: {userData?.address}</Text>
-                        <Text>Correo electrónico: {userData?.email}</Text>
-                        <Text>Genero: {userData?.genero}</Text>
-                        <Text>Edad: {userData?.edad}</Text>
-                        <Text>Peso: {userData?.peso}</Text>
-                        <Text>Estatura: {userData?.estatura}</Text>
-                        <Text>Padecimiento: {userData?.padecimiento}</Text>
-                    </View>
-                </View>
-            </SafeAreaView>
-        </TouchableWithoutFeedback>
-    );
-};
-
-// Tab.Navigator conteniendo las pantallas Home y Profile
-const MyTabs = () => {
-    return (
-        <Tab.Navigator>
-            <Tab.Screen name="Inicio" component={HomeScreen}
-                        options={{
-                            headerShown: false,
-                            tabBarIcon: ({color, size}) => (
-                                <Icon name="home-sharp" size={size} color={color}/>
-                            ),
-                            tabBarLabelStyle: {
-                                fontSize: 14,
-                            },
-                        }}
-            />
-            <Tab.Screen name="Perfil" component={ProfileScreen}
-                        options={{
-                            headerShown: false,
-                            tabBarIcon: ({color, size}) => (
-                                <Icon name="person-outline" size={size} color={color}/>
-                            ),
-                            tabBarLabel: 'Perfil',
-                            tabBarLabelStyle: {
-                                fontSize: 14,
-                            },
-                            style: {
-                                paddingBottom: 10
-                            }
-                        }}
-            />
-        </Tab.Navigator>
-    );
-};
-
-export default MyTabs;
-
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#FFFFFF',
-        paddingHorizontal: 16,
-    },
     containerFixed: {
         flex: 1,
         backgroundColor: '#FFFFFF',
@@ -464,13 +355,6 @@ const styles = StyleSheet.create({
     },
     scrollViewContent: {
         paddingBottom: 120, // Espacio adicional en la parte inferior
-    },
-    content: {
-        width: '100%',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingHorizontal: 16,
-        backgroundColor: '#FFFFFF',
     },
     title: {
         fontSize: 32,
@@ -503,23 +387,6 @@ const styles = StyleSheet.create({
         marginLeft: 10,
         borderRadius: 20,
     },
-    buttonContainer: {
-        bottom: 50,
-        width: '100%',
-        marginHorizontal: 16,
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        backgroundColor: '#EBEBFF',
-        alignItems: 'center',
-        marginTop: 20,
-        padding: 16,
-        paddingVertical: 40,
-        borderRadius: 26,
-        shadowColor: '#000',
-        shadowOpacity: 0.2,
-        shadowRadius: 10,
-        elevation: 5,
-    },
     button: {
         flex: 1,
         justifyContent: "center",
@@ -542,72 +409,105 @@ const styles = StyleSheet.create({
         textAlign: "center",
         fontWeight: "500",
     },
-    inputTitleContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        borderRadius: 10,
-        paddingVertical: 5,
-        maxWidth: '100%',
-        marginBottom: 10,
-    },
-    inputContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        borderRadius: 10,
-        paddingHorizontal: 10,
-        paddingVertical: 5,
-        width: '100%',
-        height: 50,
-        backgroundColor: '#FFFFFF',
-    },
-    input: {
-        flex: 1,
-        fontSize: 16,
-        color: '#333',
-        marginLeft: 10,
-    },
     noResultsText: {
         fontSize: 16,
         color: '#666',
         textAlign: 'center',
         marginTop: 20,
     },
-    //============ Estilos de DropDown ============//
-    dropdownContainer: {
-        marginVertical: 5,
+
+    // Estilos para la sección de etapa actual
+    currentStageContainer: {
+        borderRadius: 16,
+        padding: 16,
+        marginTop: 10,
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 4},
+        shadowOpacity: 0.2,
+        shadowRadius: 5,
+        elevation: 5,
     },
-    dropdown: {
-        height: 55,
+    stageHeaderContent: {
+        flexDirection: 'row',
+        marginBottom: 16,
+    },
+    stageTextContainer: {
+        flex: 3,
+    },
+    babyIconContainer: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    currentStageTitle: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: 'rgba(255, 255, 255, 0.9)',
+        marginBottom: 6,
+    },
+    currentStageLabel: {
+        fontSize: 22,
+        fontWeight: '800',
+        color: '#FFFFFF',
+        marginBottom: 4,
+    },
+    currentStageDescription: {
+        fontSize: 14,
+        color: 'rgba(255, 255, 255, 0.9)',
+    },
+    stageActionButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
         borderRadius: 10,
-        paddingHorizontal: 10,
-        backgroundColor: '#FFF',
+        paddingVertical: 12,
+        marginBottom: 10,
     },
-    placeholderStyle: {
+    stageActionButtonText: {
+        color: '#FFFFFF',
+        fontWeight: '700',
         fontSize: 16,
-        borderRadius: 10,
-        color: '#888',
+        marginRight: 8,
     },
-    selectedTextStyle: {
-        fontSize: 16,
-        color: '#333',
-        backgroundColor: '#FFFFFF',
+    changeStageButton: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 8,
     },
-    inputSearchStyle: {
-        height: 55,
-        fontSize: 16,
-        color: '#333',
-        backgroundColor: '#FFFFFF',
-        borderColor: '#FFF',
-        borderWidth: 1,
+    changeStageButtonText: {
+        color: 'rgba(255, 255, 255, 0.8)',
+        fontWeight: '600',
+        fontSize: 14,
     },
-    iconStyle: {
-        width: 20,
-        height: 20,
+
+    // Estilos para la sección de otras etapas
+    otherStagesScrollContent: {
+        paddingVertical: 10,
+        paddingRight: 20,
     },
-    firstName: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 5,
+    otherStageCard: {
+        width: 150,
+        height: 110,
+        borderRadius: 12,
+        marginRight: 12,
+        padding: 14,
+        justifyContent: 'space-between',
+    },
+    otherStageTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#FFFFFF',
+    },
+    otherStageRange: {
+        fontSize: 14,
+        color: 'rgba(255, 255, 255, 0.9)',
+        marginTop: 4,
+    },
+    otherStageIcon: {
+        alignSelf: 'flex-end',
+        marginTop: 6,
     },
 });
+
+export default HomeScreen;

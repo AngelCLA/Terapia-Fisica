@@ -8,6 +8,12 @@ import {Ionicons} from '@expo/vector-icons';
 import Screens from '../screens/IndexScreens';
 import DatosFisicosScreen from "../screens/DatosFisicosScreen";
 
+// Importar las nuevas pantallas para el sistema de etapas
+import StageCategoriesScreen from "../screens/StageCategoriesScreen";
+import StageExercisesScreen from "../screens/StageExercisesScreen";
+import ProgressScreen from "../screens/ProgressScreen";
+import StageSelection from "../components/StageSelection";
+
 const Stack = createNativeStackNavigator();
 
 const Navigation = () => {
@@ -206,6 +212,37 @@ const Navigation = () => {
                     gap: 16,
                 })}
             />
+
+            {/* Nuevas pantallas para el sistema de etapas */}
+            <Stack.Screen
+                name="StageSelection"
+                component={StageSelection}
+                options={({navigation}) => ({
+                    title: 'Etapas de Desarrollo',
+                    headerShown: true,
+                    headerTintColor: '#333333',
+                    headerStyle: {
+                        backgroundColor: '#FFFFFF',
+                    },
+                })}
+            />
+
+            <Stack.Screen
+                name="StageCategoriesScreen"
+                component={StageCategoriesScreen}
+                options={{
+                    headerShown: false,
+                }}
+            />
+
+            <Stack.Screen
+                name="StageExercisesScreen"
+                component={StageExercisesScreen}
+                options={{
+                    headerShown: false,
+                }}
+            />
+
             {/* Videos */}
             <Stack.Screen
                 name="VideoPlayerScreen"
@@ -213,6 +250,17 @@ const Navigation = () => {
                 options={({route, navigation}) => ({
                     title: route.params?.title || 'Reproductor', // Usa el título del video o un valor por defecto
                     headerShown: true,
+                })}
+            />
+            <Stack.Screen
+                name="Progreso"
+                component={ProgressScreen}
+                options={({navigation}) => ({
+                    title: 'Tu Progreso',
+                    headerShown: true,
+                    headerTitleStyle: {
+                        fontWeight: 'bold',
+                    },
                 })}
             />
         </Stack.Navigator>

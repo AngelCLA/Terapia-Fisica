@@ -12,7 +12,7 @@ const YOUTUBE_API_KEYS = [
 const YOUTUBE_API_BASE_URL = 'https://www.googleapis.com/youtube/v3';
 
 // ID del canal específico
-const CHANNEL_ID = 'UCNJWe9sVinPkGd1KqGP45cA';
+const CHANNEL_ID = 'UCqf7TAAqkN-qbTe1m-l1trg';
 
 // Lleva un registro del índice de la API que se está usando actualmente
 let currentApiKeyIndex = 0;

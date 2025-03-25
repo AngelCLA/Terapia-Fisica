@@ -31,11 +31,10 @@ const BasculaImage = require('../assets/bascula.png');
 
 // Definir las etapas de vida con sus rangos de edad (fuera del componente para no recrearlas)
 const etapasVida = [
-    { id: 'adolescente', titulo: 'Adolescente', rango: '13-17 años', edadMedia: 15 },
-    { id: 'joven', titulo: 'Joven adulto', rango: '18-29 años', edadMedia: 24 },
-    { id: 'adulto', titulo: 'Adulto', rango: '30-45 años', edadMedia: 38 },
-    { id: 'maduro', titulo: 'Adulto maduro', rango: '46-59 años', edadMedia: 52 },
-    { id: 'mayor', titulo: 'Adulto mayor', rango: '60+ años', edadMedia: 65 }
+    { id: 'Etapa 1', titulo: 'Etapa 1', rango: '0-3 meses', edadMedia: 2 },
+    { id: 'Etapa 2', titulo: 'Etapa 2', rango: '4-6 meses', edadMedia: 5 },
+    { id: 'Etapa 3', titulo: 'Etapa 3', rango: '7-9 meses', edadMedia: 8 },
+    { id: 'Etapa 4', titulo: 'Etapa 4', rango: '10-12 meses', edadMedia: 11 }
 ];
 
 const DatosFisicosScreen = () => {
@@ -54,17 +53,17 @@ const DatosFisicosScreen = () => {
     });
     const [selectedFirstPicker, setSelectedFirstPicker] = useState('0');
     const [selectedSecondPicker, setSelectedSecondPicker] = useState('0');
-    const [etapaSeleccionada, setEtapaSeleccionada] = useState('joven');
+    const [etapaSeleccionada, setEtapaSeleccionada] = useState('0');
 
     // Efecto para inicializar la etapa basada en la edad
     useEffect(() => {
         if (formData.edad) {
             const edad = parseInt(formData.edad);
-            if (edad < 18) setEtapaSeleccionada('adolescente');
-            else if (edad < 30) setEtapaSeleccionada('joven');
-            else if (edad < 46) setEtapaSeleccionada('adulto');
-            else if (edad < 60) setEtapaSeleccionada('maduro');
-            else setEtapaSeleccionada('mayor');
+            if (edad < 4) setEtapaSeleccionada('Etapa 1');
+            else if (edad < 7) setEtapaSeleccionada('Etapa 2');
+            else if (edad < 10) setEtapaSeleccionada('Etapa 3');
+            else if (edad < 13) setEtapaSeleccionada('Etapa 4');
+            else setEtapaSeleccionada('Etapa 5');
         }
     }, [formData.edad]);
 
@@ -199,10 +198,7 @@ const DatosFisicosScreen = () => {
 
         return (
             <View style={styles.etapasContainer}>
-                <Text style={styles.title}>¿Cuál es tu etapa de vida?</Text>
-                <Text style={styles.etapasSubtitle}>
-                    Transformamos tu cuerpo y elevamos tu salud.
-                </Text>
+                <Text style={styles.title}>¿Cuál es su etapa de vida?</Text>
 
                 <View style={styles.etapasOptionsContainer}>
                     {etapasVida.map(etapa => (
@@ -460,7 +456,7 @@ const DatosFisicosScreen = () => {
                         <View style={styles.iconDataRow}>
                             <View style={styles.dataRowFlex}>
                                 <Text style={styles.dataLabel}>Edad:</Text>
-                                <Text style={styles.dataValue}>{allData.edad ? `${allData.edad} años` : 'No especificada'}</Text>
+                                <Text style={styles.dataValue}>{allData.edad ? `${allData.edad} meses` : 'No especificada'}</Text>
                             </View>
                         </View>
 
