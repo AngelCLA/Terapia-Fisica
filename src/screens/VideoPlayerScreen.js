@@ -152,7 +152,7 @@ const VideoPlayerScreen = ({route, navigation}) => {
                     >
                         <YouTubeIframe
                             ref={playerRef}
-                            height={300}
+                            height={500}
                             videoId={videoId}
                             play={isPlaying}
                             onChangeState={handleStateChange}
