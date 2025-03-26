@@ -21,15 +21,23 @@ const StageSelection = ({ navigation, previewMode = false }) => {
 
     return (
         <SafeAreaProvider style={{ flex: 1, backgroundColor: '#fff' }}>
-
-            <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+            <ScrollView
+                style={styles.container}
+                contentContainerStyle={styles.contentContainer}
+                accessibilityLabel="Selección de etapa de desarrollo"
+            >
                 {!previewMode && (
-                    <View style={styles.introSection}>
-
+                    <View
+                        style={styles.introSection}
+                        accessibilityLabel="Introducción a las etapas de desarrollo"
+                    >
                     </View>
                 )}
 
-                <View style={styles.stageList}>
+                <View
+                    style={styles.stageList}
+                    accessibilityLabel="Lista de etapas de desarrollo"
+                >
                     {etapasVida.map((stage) => (
                         <TouchableOpacity
                             key={stage.id}
@@ -40,6 +48,9 @@ const StageSelection = ({ navigation, previewMode = false }) => {
                             ]}
                             onPress={() => handleStagePress(stage)}
                             activeOpacity={0.8}
+                            accessibilityLabel={`${stage.titulo} para bebés de ${stage.rango}`}
+                            accessibilityRole="button"
+                            accessibilityHint={`Navega a los ejercicios para bebés de ${stage.rango}`}
                         >
                             <View style={styles.stageContent}>
                                 <View style={styles.stageTextContent}>
@@ -54,7 +65,13 @@ const StageSelection = ({ navigation, previewMode = false }) => {
                                 </View>
 
                                 <View style={styles.stageIconContainer}>
-                                    <Ionicons name="body" size={previewMode ? 30 : 45} color="#FFFFFF" style={{opacity: 0.8}} />
+                                    <Ionicons
+                                        name="body"
+                                        size={previewMode ? 30 : 45}
+                                        color="#FFFFFF"
+                                        style={{opacity: 0.8}}
+                                        accessibilityLabel="Icono de bebé"
+                                    />
                                 </View>
                             </View>
                         </TouchableOpacity>

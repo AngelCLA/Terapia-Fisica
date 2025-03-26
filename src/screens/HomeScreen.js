@@ -131,7 +131,14 @@ const HomeScreen = ({navigation}) => {
     };
 
     if (loading) {
-        return <ActivityIndicator size="large" color="#0000ff"/>;
+        return (
+            <View
+                style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}
+                accessibilityLabel="Cargando datos, por favor espere"
+            >
+                <ActivityIndicator size="large" color="#0000ff"/>
+            </View>
+        );
     }
 
     // Obtener datos de la etapa actual
@@ -143,26 +150,42 @@ const HomeScreen = ({navigation}) => {
                 <StatusBar style="dark" />
                 <View style={[styles.containerFixed, { paddingTop: insets.top }]}>
                     {/* Header */}
-                    <View style={styles.titleContainer}>
+                    <View
+                        style={styles.titleContainer}
+                        accessibilityRole="header"
+                    >
                         <View style={styles.textContainer}>
                             <Text style={{color: '#444444', fontSize: 20, fontWeight: '400'}}>👏 Bienvenido,</Text>
                             {userData ? (
-                                <Text style={styles.title}>{userData.firstName}{' '}{userData.lastName}</Text>
+                                <Text
+                                    style={styles.title}
+                                    accessibilityLabel={`Bienvenido, ${userData.firstName} ${userData.lastName}`}
+                                >
+                                    {userData.firstName}{' '}{userData.lastName}
+                                </Text>
                             ) : (
                                 <Text style={styles.title}>Guest</Text>
                             )}
                         </View>
-                        <Image source={require('../assets/avatar2.png')} style={styles.image}/>
+                        <Image
+                            source={require('../assets/avatarnina.png')}
+                            style={styles.image}
+                            accessibilityLabel="Avatar de perfil"
+                        />
                     </View>
 
                     <ScrollView
                         style={styles.scrollView}
                         contentContainerStyle={styles.scrollViewContent}
                         showsVerticalScrollIndicator={true}
+                        accessibilityLabel="Contenido principal"
                     >
                         <View>
                             {/* Sección con la etapa actual del bebé */}
-                            <View style={[styles.currentStageContainer, { backgroundColor: etapaActual.color }]}>
+                            <View
+                                style={[styles.currentStageContainer, { backgroundColor: etapaActual.color }]}
+                                accessibilityLabel={`Información de etapa actual: ${etapaActual.titulo}, bebés de ${etapaActual.rango}`}
+                            >
                                 <View style={styles.stageHeaderContent}>
                                     <View style={styles.stageTextContainer}>
                                         <Text style={styles.currentStageTitle}>
@@ -176,13 +199,21 @@ const HomeScreen = ({navigation}) => {
                                         </Text>
                                     </View>
                                     <View style={styles.babyIconContainer}>
-                                        <MaterialCommunityIcons name="human-child" size={50} color="#FFFFFF" />
+                                        <MaterialCommunityIcons
+                                            name="human-child"
+                                            size={50}
+                                            color="#FFFFFF"
+                                            accessibilityLabel="Icono de bebé"
+                                        />
                                     </View>
                                 </View>
 
                                 <TouchableOpacity
                                     style={styles.stageActionButton}
                                     onPress={navigateToEtapaExercises}
+                                    accessibilityLabel={`Ver ejercicios recomendados para bebés de ${etapaActual.rango}`}
+                                    accessibilityRole="button"
+                                    accessibilityHint="Navega a la pantalla de ejercicios recomendados para esta etapa"
                                 >
                                     <Text style={styles.stageActionButtonText}>Ver ejercicios recomendados</Text>
                                     <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
@@ -191,18 +222,30 @@ const HomeScreen = ({navigation}) => {
                                 <TouchableOpacity
                                     style={styles.changeStageButton}
                                     onPress={() => navigation.navigate('StageSelection')}
+                                    accessibilityLabel="Cambiar etapa de desarrollo"
+                                    accessibilityRole="button"
+                                    accessibilityHint="Navega a la pantalla de selección de etapas"
                                 >
                                     <Text style={styles.changeStageButtonText}>Cambiar etapa</Text>
                                 </TouchableOpacity>
                             </View>
 
                             {/* Botones - Opciones rápidas */}
-                            <Text style={styles.sectionTitle}>Acceso rápido</Text>
-                            <View style={{flexDirection: "row", justifyContent: "space-between"}}>
+                            <Text
+                                style={styles.sectionTitle}
+                                accessibilityRole="text"
+                            >
+                                Acceso rápido
+                            </Text>
+                            <View
+                                style={{flexDirection: "row", justifyContent: "space-between"}}
+                            >
                                 <Pressable
                                     style={styles.button}
                                     onPress={navigateToEtapaExercises}
-                                    accessibilityLabel={"Ir a la pantalla de Ejercicios"}
+                                    accessibilityLabel="Ir a la pantalla de Ejercicios"
+                                    accessibilityRole="button"
+                                    accessibilityHint="Muestra los ejercicios disponibles para la etapa actual"
                                 >
                                     <Ionicons name="barbell" size={24} color="black"/>
                                     <Text style={styles.buttonText}>Ejercicios</Text>
@@ -210,7 +253,9 @@ const HomeScreen = ({navigation}) => {
                                 <Pressable
                                     style={styles.button}
                                     onPress={() => navigation.navigate('Progreso')}
-                                    accessibilityLabel={"Ir a la pantalla de Progreso"}
+                                    accessibilityLabel="Ir a la pantalla de Progreso"
+                                    accessibilityRole="button"
+                                    accessibilityHint="Muestra el seguimiento del progreso de tu bebé"
                                 >
                                     <Ionicons name="bar-chart" size={24} color="black"/>
                                     <Text style={styles.buttonText}>Progreso</Text>
@@ -218,7 +263,9 @@ const HomeScreen = ({navigation}) => {
                                 <Pressable
                                     style={styles.button}
                                     onPress={() => navigation.navigate('Datos')}
-                                    accessibilityLabel={"Ir a la pantalla de Datos"}
+                                    accessibilityLabel="Ir a la pantalla de Datos"
+                                    accessibilityRole="button"
+                                    accessibilityHint="Muestra los datos guardados de tu bebé"
                                 >
                                     <Ionicons name="file-tray-stacked" size={24} color="black"/>
                                     <Text style={styles.buttonText}>Datos</Text>
@@ -226,11 +273,22 @@ const HomeScreen = ({navigation}) => {
                             </View>
 
                             {/* ========== Sección de videos ========== */}
-                            <View>
-                                <Text style={styles.sectionTitle}>Videos recomendados para {etapaActual.rango}</Text>
+                            <View
+                                accessibilityLabel={`Videos recomendados para bebés de ${etapaActual.rango}`}
+                            >
+                                <Text
+                                    style={styles.sectionTitle}
+                                    accessibilityRole="text"
+                                >
+                                    Videos recomendados para {etapaActual.rango}
+                                </Text>
 
                                 {videosLoading ? (
-                                    <ActivityIndicator size="large" color="#0000ff" style={{marginTop: 20}} />
+                                    <View
+                                        accessibilityLabel="Cargando videos, por favor espere"
+                                    >
+                                        <ActivityIndicator size="large" color="#0000ff" style={{marginTop: 20}} />
+                                    </View>
                                 ) : featuredVideos.length > 0 ? (
                                     <>
                                         {/* First featured video (larger) */}
@@ -250,6 +308,9 @@ const HomeScreen = ({navigation}) => {
                                                         videoTags: featuredVideos[0].snippet.tags || [],
                                                     });
                                                 }}
+                                                accessibilityLabel={`Video recomendado: ${featuredVideos[0].snippet.title}. Duración: ${featuredVideos[0].formattedDuration || 'No disponible'}`}
+                                                accessibilityRole="button"
+                                                accessibilityHint="Pulsa para reproducir este video"
                                             />
                                         )}
 
@@ -278,6 +339,9 @@ const HomeScreen = ({navigation}) => {
                                                                 videoTags: featuredVideos[1].snippet.tags || [],
                                                             });
                                                         }}
+                                                        accessibilityLabel={`Video recomendado: ${featuredVideos[1].snippet.title}. Duración: ${featuredVideos[1].formattedDuration || 'No disponible'}`}
+                                                        accessibilityRole="button"
+                                                        accessibilityHint="Pulsa para reproducir este video"
                                                     />
                                                 )}
 
@@ -298,22 +362,36 @@ const HomeScreen = ({navigation}) => {
                                                                 videoTags: featuredVideos[2].snippet.tags || [],
                                                             });
                                                         }}
+                                                        accessibilityLabel={`Video recomendado: ${featuredVideos[2].snippet.title}. Duración: ${featuredVideos[2].formattedDuration || 'No disponible'}`}
+                                                        accessibilityRole="button"
+                                                        accessibilityHint="Pulsa para reproducir este video"
                                                     />
                                                 )}
                                             </View>
                                         )}
                                     </>
                                 ) : (
-                                    <Text style={styles.noResultsText}>No hay videos disponibles ahora.</Text>
+                                    <Text
+                                        style={styles.noResultsText}
+                                        accessibilityLabel="No hay videos disponibles ahora"
+                                    >
+                                        No hay videos disponibles ahora.
+                                    </Text>
                                 )}
                             </View>
 
                             {/* Otras etapas */}
-                            <Text style={styles.sectionTitle}>Explorar otras etapas</Text>
+                            <Text
+                                style={styles.sectionTitle}
+                                accessibilityRole="header"
+                            >
+                                Explorar otras etapas
+                            </Text>
                             <ScrollView
                                 horizontal={true}
                                 showsHorizontalScrollIndicator={false}
                                 contentContainerStyle={styles.otherStagesScrollContent}
+                                accessibilityLabel="Carrusel de otras etapas de desarrollo"
                             >
                                 {etapasVida.map((etapa) => {
                                     // Omitir la etapa actual
@@ -327,6 +405,9 @@ const HomeScreen = ({navigation}) => {
                                                 stageId: etapa.id,
                                                 stageTitle: `${etapa.titulo} (${etapa.rango})`
                                             })}
+                                            accessibilityLabel={`Explorar ${etapa.titulo} para bebés de ${etapa.rango}`}
+                                            accessibilityRole="button"
+                                            accessibilityHint={`Navega a los ejercicios para bebés de ${etapa.rango}`}
                                         >
                                             <Text style={styles.otherStageTitle}>{etapa.titulo}</Text>
                                             <Text style={styles.otherStageRange}>{etapa.rango}</Text>

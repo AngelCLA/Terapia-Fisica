@@ -184,16 +184,32 @@ const StageExercisesScreen = ({ route, navigation }) => {
             <StatusBar barStyle="light-content" backgroundColor={stageColors.secondary} />
             <SafeAreaView style={styles.container} edges={['top']}>
                 {/* Cabecera con la etapa y categoría seleccionada */}
-                <View style={[styles.header, { backgroundColor: stageColors.secondary }]}>
+                <View
+                    style={[styles.header, { backgroundColor: stageColors.secondary }]}
+                    accessibilityLabel={`Ejercicios de ${categoryTitle} para ${stageTitle}`}
+                >
                     <TouchableOpacity
                         style={styles.backButton}
                         onPress={() => navigation.goBack()}
+                        accessibilityLabel="Regresar a la pantalla anterior"
+                        accessibilityRole="button"
+                        accessibilityHint="Vuelve a la lista de categorías"
                     >
                         <Ionicons name="arrow-back" size={24} color="#FFF" />
                     </TouchableOpacity>
                     <View style={styles.headerTitleContainer}>
-                        <Text style={styles.headerSubtitle}>{stageTitle}</Text>
-                        <Text style={styles.headerTitle}>{categoryTitle}</Text>
+                        <Text
+                            style={styles.headerSubtitle}
+                            accessibilityLabel={`Etapa: ${stageTitle}`}
+                        >
+                            {stageTitle}
+                        </Text>
+                        <Text
+                            style={styles.headerTitle}
+                            accessibilityLabel={`Categoría: ${categoryTitle}`}
+                        >
+                            {categoryTitle}
+                        </Text>
                     </View>
                 </View>
 
@@ -206,6 +222,7 @@ const StageExercisesScreen = ({ route, navigation }) => {
                             onRefresh={onRefresh}
                             colors={[stageColors.secondary]}
                             tintColor={stageColors.secondary}
+                            accessibilityLabel="Desliza hacia abajo para actualizar"
                         />
                     }
                     onScroll={({nativeEvent}) => {
@@ -219,18 +236,28 @@ const StageExercisesScreen = ({ route, navigation }) => {
                         }
                     }}
                     scrollEventThrottle={400}
+                    accessibilityLabel={`Lista de ejercicios de ${categoryTitle} para ${stageTitle}`}
                 >
-                    <Text style={styles.sectionTitle}>
+                    <Text
+                        style={styles.sectionTitle}
+                        accessibilityRole="text"
+                    >
                         Ejercicios para {categoryTitle} en {stageTitle}
                     </Text>
 
                     {isLoading && !isLoadingMore ? (
-                        <View style={styles.loaderContainer}>
+                        <View
+                            style={styles.loaderContainer}
+                            accessibilityLabel="Cargando ejercicios, por favor espere"
+                        >
                             <ActivityIndicator size="large" color={stageColors.secondary} />
                             <Text style={styles.loaderText}>Cargando ejercicios...</Text>
                         </View>
                     ) : videos.length === 0 ? (
-                        <View style={styles.emptyContainer}>
+                        <View
+                            style={styles.emptyContainer}
+                            accessibilityLabel="No hay ejercicios disponibles para esta categoría y etapa"
+                        >
                             <Ionicons name="fitness-outline" size={60} color="#CCCCCC" />
                             <Text style={styles.emptyText}>
                                 No hay ejercicios disponibles para esta categoría y etapa.
@@ -238,14 +265,23 @@ const StageExercisesScreen = ({ route, navigation }) => {
                             <TouchableOpacity
                                 style={[styles.refreshButton, { backgroundColor: stageColors.secondary }]}
                                 onPress={() => loadVideos(true)}
+                                accessibilityLabel="Intentar nuevamente"
+                                accessibilityRole="button"
+                                accessibilityHint="Intenta cargar los ejercicios otra vez"
                             >
                                 <Text style={styles.refreshButtonText}>Intentar nuevamente</Text>
                             </TouchableOpacity>
                         </View>
                     ) : (
-                        <View style={styles.videoListContainer}>
+                        <View
+                            style={styles.videoListContainer}
+                            accessibilityLabel={`${videos.length} ejercicios encontrados`}
+                        >
                             {usingFallback && (
-                                <View style={styles.fallbackBanner}>
+                                <View
+                                    style={styles.fallbackBanner}
+                                    accessibilityLabel={`Mostrando todos los ejercicios de ${categoryTitle} sin filtrar por etapa`}
+                                >
                                     <Ionicons name="information-circle" size={20} color="#666" />
                                     <Text style={styles.fallbackText}>
                                         Mostrando todos los ejercicios de {categoryTitle}
@@ -273,11 +309,17 @@ const StageExercisesScreen = ({ route, navigation }) => {
                                         stageId: stageId,
                                         stageTitle: stageTitle
                                     })}
+                                    accessibilityLabel={`Video: ${video.snippet.title}. Duración: ${video.formattedDuration || 'No disponible'}`}
+                                    accessibilityRole="button"
+                                    accessibilityHint="Pulsa para reproducir este video"
                                 />
                             ))}
 
                             {isLoadingMore && (
-                                <View style={styles.loadMoreContainer}>
+                                <View
+                                    style={styles.loadMoreContainer}
+                                    accessibilityLabel="Cargando más ejercicios"
+                                >
                                     <ActivityIndicator size="small" color={stageColors.secondary} />
                                     <Text style={styles.loadMoreText}>Cargando más ejercicios...</Text>
                                 </View>
@@ -286,24 +328,49 @@ const StageExercisesScreen = ({ route, navigation }) => {
                     )}
 
                     {/* Información adicional sobre esta categoría para esta etapa */}
-                    <View style={styles.infoCard}>
-                        <Text style={styles.infoTitle}>¿Por qué es importante?</Text>
-                        <Text style={styles.infoDescription}>
+                    <View
+                        style={styles.infoCard}
+                        accessibilityLabel="Información importante sobre los ejercicios"
+                    >
+                        <Text
+                            style={styles.infoTitle}
+                            accessibilityRole="text"
+                        >
+                            ¿Por qué es importante?
+                        </Text>
+                        <Text
+                            style={styles.infoDescription}
+                            accessibilityLabel={`Los ejercicios de ${categoryTitle.toLowerCase()} para bebés de ${stageTitle} ayudan a desarrollar la movilidad y fortaleza muscular, preparando al bebé para los hitos de desarrollo correspondientes a su edad.`}
+                        >
                             Los ejercicios de {categoryTitle.toLowerCase()} para bebés de {stageTitle} ayudan a desarrollar
                             la movilidad y fortaleza muscular, preparando al bebé para los hitos de desarrollo
                             correspondientes a su edad.
                         </Text>
-                        <Text style={styles.infoTitle}>Consejos para esta etapa</Text>
+                        <Text
+                            style={styles.infoTitle}
+                            accessibilityRole="text"
+                        >
+                            Consejos para esta etapa
+                        </Text>
                         <View style={styles.tipsList}>
-                            <View style={styles.tipItem}>
+                            <View
+                                style={styles.tipItem}
+                                accessibilityLabel="Consejo: Realiza los ejercicios a diario por periodos cortos"
+                            >
                                 <Ionicons name="checkmark-circle" size={20} color={stageColors.secondary} />
                                 <Text style={styles.tipText}>Realiza los ejercicios a diario por periodos cortos</Text>
                             </View>
-                            <View style={styles.tipItem}>
+                            <View
+                                style={styles.tipItem}
+                                accessibilityLabel="Consejo: Observa las reacciones del bebé; detente si muestra incomodidad"
+                            >
                                 <Ionicons name="checkmark-circle" size={20} color={stageColors.secondary} />
                                 <Text style={styles.tipText}>Observa las reacciones del bebé; detente si muestra incomodidad</Text>
                             </View>
-                            <View style={styles.tipItem}>
+                            <View
+                                style={styles.tipItem}
+                                accessibilityLabel="Consejo: Consulta avances con tu pediatra regularmente"
+                            >
                                 <Ionicons name="checkmark-circle" size={20} color={stageColors.secondary} />
                                 <Text style={styles.tipText}>Consulta avances con tu pediatra regularmente</Text>
                             </View>

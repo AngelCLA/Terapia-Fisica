@@ -90,27 +90,51 @@ const CategorySection = ({ route, navigation }) => {
             <StatusBar barStyle="light-content" backgroundColor={stageColors.secondary} />
             <SafeAreaView style={styles.container} edges={['top']}>
                 {/* Cabecera con la etapa seleccionada */}
-                <View style={[styles.header, { backgroundColor: stageColors.secondary }]}>
+                <View
+                    style={[styles.header, { backgroundColor: stageColors.secondary }]}
+                    accessibilityLabel={`Categorías para ${stageTitle}`}
+                >
                     <TouchableOpacity
                         style={styles.backButton}
                         onPress={() => navigation.goBack()}
+                        accessibilityLabel="Regresar a la pantalla anterior"
+                        accessibilityRole="button"
+                        accessibilityHint="Vuelve a la pantalla anterior"
                     >
                         <Ionicons name="arrow-back" size={24} color="#FFF" />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>{stageTitle}</Text>
+                    <Text
+                        style={styles.headerTitle}
+                        accessibilityLabel={`Etapa seleccionada: ${stageTitle}`}
+                    >
+                        {stageTitle}
+                    </Text>
                 </View>
 
-                <ScrollView style={styles.scrollView}>
+                <ScrollView
+                    style={styles.scrollView}
+                    accessibilityLabel={`Información y categorías para ${stageTitle}`}
+                >
                     {/* Banner informativo sobre esta etapa */}
-                    <View style={[styles.stageBanner, { backgroundColor: stageColors.primary }]}>
+                    <View
+                        style={[styles.stageBanner, { backgroundColor: stageColors.primary }]}
+                        accessibilityLabel={`Hitos de desarrollo para ${stageTitle}`}
+                    >
                         <View style={styles.stageBannerContent}>
                             <View style={styles.stageBannerTextContent}>
-                                <Text style={styles.stageBannerTitle}>
+                                <Text
+                                    style={styles.stageBannerTitle}
+                                    accessibilityRole="text"
+                                >
                                     Hitos de desarrollo
                                 </Text>
                                 <View style={styles.milestonesList}>
                                     {milestones.map((milestone, index) => (
-                                        <View key={index} style={styles.milestoneItem}>
+                                        <View
+                                            key={index}
+                                            style={styles.milestoneItem}
+                                            accessibilityLabel={`Hito de desarrollo: ${milestone}`}
+                                        >
                                             <Ionicons name="checkmark-circle" size={18} color="#FFFFFF" />
                                             <Text style={styles.milestoneText}>{milestone}</Text>
                                         </View>
@@ -118,25 +142,45 @@ const CategorySection = ({ route, navigation }) => {
                                 </View>
                             </View>
                             <View style={styles.stageIconContainer}>
-                                <Ionicons name="body" size={60} color="#FFFFFF" style={{opacity: 0.8}} />
+                                <Ionicons
+                                    name="body"
+                                    size={60}
+                                    color="#FFFFFF"
+                                    style={{opacity: 0.8}}
+                                    accessibilityLabel="Icono representativo de bebé"
+                                />
                             </View>
                         </View>
                     </View>
 
                     <View style={styles.contentContainer}>
-                        <Text style={styles.sectionTitle}>Categorías de ejercicios</Text>
-                        <Text style={styles.sectionSubtitle}>
+                        <Text
+                            style={styles.sectionTitle}
+                            accessibilityRole="text"
+                        >
+                            Categorías de ejercicios
+                        </Text>
+                        <Text
+                            style={styles.sectionSubtitle}
+                            accessibilityLabel={`Selecciona una categoría para ver ejercicios específicos para ${stageTitle}`}
+                        >
                             Selecciona una categoría para ver ejercicios específicos para {stageTitle}
                         </Text>
 
                         {/* Lista de categorías */}
-                        <View style={styles.categoryList}>
+                        <View
+                            style={styles.categoryList}
+                            accessibilityLabel="Lista de categorías disponibles"
+                        >
                             {categories.map((category) => (
                                 <TouchableOpacity
                                     key={category.id}
                                     style={styles.categoryCard}
                                     onPress={() => handleCategoryPress(category)}
                                     activeOpacity={0.7}
+                                    accessibilityLabel={`Categoría ${category.label}: ${category.subtitle}. ${category.description}`}
+                                    accessibilityRole="button"
+                                    accessibilityHint={`Muestra ejercicios de ${category.label} para ${stageTitle}`}
                                 >
                                     <View style={styles.cardContent}>
                                         <View style={[styles.iconWrapper, { backgroundColor: category.iconWrapperColor }]}>
@@ -164,7 +208,10 @@ const CategorySection = ({ route, navigation }) => {
                         </View>
 
                         {categories.length === 0 && (
-                            <View style={styles.emptyContainer}>
+                            <View
+                                style={styles.emptyContainer}
+                                accessibilityLabel="No hay categorías disponibles para esta etapa"
+                            >
                                 <Ionicons name="fitness-outline" size={60} color="#CCCCCC" />
                                 <Text style={styles.emptyText}>
                                     No hay categorías disponibles para esta etapa.
@@ -173,10 +220,21 @@ const CategorySection = ({ route, navigation }) => {
                         )}
 
                         {/* Sección de información adicional */}
-                        <View style={styles.infoSection}>
-                            <Text style={styles.infoSectionTitle}>Consejos para esta etapa</Text>
+                        <View
+                            style={styles.infoSection}
+                            accessibilityLabel="Consejos para esta etapa"
+                        >
+                            <Text
+                                style={styles.infoSectionTitle}
+                                accessibilityRole="text"
+                            >
+                                Consejos para esta etapa
+                            </Text>
 
-                            <View style={styles.tipCard}>
+                            <View
+                                style={styles.tipCard}
+                                accessibilityLabel="Duración adecuada: Realiza los ejercicios por períodos cortos (5-10 minutos) varias veces al día"
+                            >
                                 <View style={styles.tipIconContainer}>
                                     <Ionicons name="time-outline" size={28} color={stageColors.secondary} />
                                 </View>
@@ -188,7 +246,10 @@ const CategorySection = ({ route, navigation }) => {
                                 </View>
                             </View>
 
-                            <View style={styles.tipCard}>
+                            <View
+                                style={styles.tipCard}
+                                accessibilityLabel="Estado de ánimo: Realiza los ejercicios cuando el bebé esté tranquilo y alerta, no cuando tenga hambre o sueño"
+                            >
                                 <View style={styles.tipIconContainer}>
                                     <Ionicons name="happy-outline" size={28} color={stageColors.secondary} />
                                 </View>
@@ -200,7 +261,10 @@ const CategorySection = ({ route, navigation }) => {
                                 </View>
                             </View>
 
-                            <View style={styles.tipCard}>
+                            <View
+                                style={styles.tipCard}
+                                accessibilityLabel="Consistencia: La regularidad es clave. Establece una rutina diaria para los ejercicios"
+                            >
                                 <View style={styles.tipIconContainer}>
                                     <Ionicons name="calendar-outline" size={28} color={stageColors.secondary} />
                                 </View>

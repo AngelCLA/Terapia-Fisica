@@ -85,8 +85,31 @@ const ActivityCompletionButton = ({ activity, onCompletion }) => {
         }
     };
 
+    // Crear etiquetas de accesibilidad apropiadas según el estado
+    const getAccessibilityLabel = () => {
+        if (loading) {
+            return "Registrando actividad, por favor espere";
+        } else if (completed) {
+            return `Actividad completada: ${activity.videoTitle || 'Ejercicio'}`;
+        } else {
+            return `Marcar como completado: ${activity.videoTitle || 'Ejercicio'}`;
+        }
+    };
+
+    const getAccessibilityHint = () => {
+        if (completed) {
+            return "Esta actividad ya ha sido registrada en tu progreso";
+        } else if (!loading) {
+            return "Pulsa para registrar esta actividad en tu progreso";
+        }
+        return "";
+    };
+
     return (
-        <View style={styles.container}>
+        <View
+            style={styles.container}
+            accessibilityLabel="Control de registro de actividad"
+        >
             <TouchableOpacity
                 style={[
                     styles.button,
@@ -94,17 +117,35 @@ const ActivityCompletionButton = ({ activity, onCompletion }) => {
                 ]}
                 onPress={handleMarkAsCompleted}
                 disabled={loading || completed}
+                accessibilityLabel={getAccessibilityLabel()}
+                accessibilityRole="button"
+                accessibilityHint={getAccessibilityHint()}
+                accessibilityState={{
+                    disabled: loading || completed,
+                    busy: loading,
+                    checked: completed
+                }}
             >
                 {loading ? (
                     <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : completed ? (
                     <>
-                        <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
+                        <Ionicons
+                            name="checkmark-circle"
+                            size={20}
+                            color="#FFFFFF"
+                            accessibilityLabel="Ícono de completado"
+                        />
                         <Text style={styles.buttonText}>Completado</Text>
                     </>
                 ) : (
                     <>
-                        <Ionicons name="checkmark-circle-outline" size={20} color="#FFFFFF" />
+                        <Ionicons
+                            name="checkmark-circle-outline"
+                            size={20}
+                            color="#FFFFFF"
+                            accessibilityLabel="Ícono de marcar como completado"
+                        />
                         <Text style={styles.buttonText}>Marcar como completado</Text>
                     </>
                 )}
