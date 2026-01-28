@@ -1,4 +1,22 @@
-// Importa Constants para detectar el entorno
+/**
+ * Servicio de Autenticación con Google
+ * 
+ * Proporciona funcionalidad completa de autenticación con Google,
+ * compatible tanto con Expo Go como con builds nativos de la aplicación.
+ * 
+ * Características:
+ * - Detección automática del entorno de ejecución
+ * - Soporte para múltiples plataformas (iOS, Android, Web)
+ * - Gestión de credenciales de Firebase
+ * - Diferenciación entre usuarios nuevos y existentes
+ * - Manejo robusto de errores
+ * 
+ * @module GoogleAuthService
+ * @requires firebase/auth
+ * @requires expo-auth-session
+ * @requires @react-native-google-signin/google-signin
+ */
+
 import { Alert, Platform } from 'react-native';
 import { getAuth, GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
 import { initializeApp } from 'firebase/app';
@@ -8,17 +26,41 @@ import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
 import Constants from 'expo-constants';
 
-// Inicializa Firebase
+/** Instancia de aplicación Firebase inicializada */
 const app = initializeApp(firebaseConfig);
+/** Servicio de autenticación de Firebase */
 const auth = getAuth(app);
 
-// ID de cliente de Google para la autenticación
+/**
+ * Credenciales de Cliente de Google OAuth
+ * 
+ * IDs de cliente para autenticación OAuth de Google en diferentes plataformas.
+ * Estos valores deben configurarse en Google Cloud Console.
+ * @constant {string}
+ */
 const WEB_CLIENT_ID = '767069675314-tkdvi7q5j4pa6pof1l8ssn1rkrvbtpul.apps.googleusercontent.com';
 const IOS_CLIENT_ID = '767069675314-vsqpsigqviltgigq65nf589doguhi81i.apps.googleusercontent.com';
 const ANDROID_CLIENT_ID = '767069675314-05oabgv00id0lffhlk9h9na501f8qqn9.apps.googleusercontent.com';
 const EXPO_CLIENT_ID = '767069675314-tkdvi7q5j4pa6pof1l8ssn1rkrvbtpul.apps.googleusercontent.com';
 
-// Hook personalizado para autenticación con Google en Expo Go
+/**
+ * Hook de Autenticación con Google para Expo Go
+ * 
+ * Proporciona funcionalidad de inicio de sesión con Google optimizada
+ * para el entorno de Expo Go. Utiliza expo-auth-session para gestionar
+ * el flujo de autenticación OAuth.
+ * 
+ * @hook
+ * @returns {Object} Objeto con propiedades y métodos de autenticación
+ * @returns {boolean} returns.loading - Indica si hay un proceso de autenticación en curso
+ * @returns {Object} returns.request - Objeto de solicitud de autenticación
+ * @returns {Object} returns.response - Respuesta de la autenticación
+ * @returns {function} returns.signInWithGoogleExpo - Función para iniciar el flujo de autenticación
+ * 
+ * @example
+ * const { loading, signInWithGoogleExpo } = useGoogleAuth();
+ * await signInWithGoogleExpo(navigation);
+ */
 export const useGoogleAuth = () => {
     const [loading, setLoading] = useState(false);
     const [request, response, promptAsync] = Google.useAuthRequest({
@@ -29,6 +71,22 @@ export const useGoogleAuth = () => {
         selectAccount: true,
     });
 
+    /**
+     * Inicia Sesión con Google (Expo Go)
+     * 
+     * Ejecuta el flujo completo de autenticación con Google en Expo Go:
+     * 1. Inicia el prompt de autenticación de Google
+     * 2. Obtiene el token de ID
+     * 3. Crea credenciales de Firebase
+     * 4. Autentica al usuario en Firebase
+     * 5. Determina si es usuario nuevo o existente
+     * 6. Navega a la pantalla correspondiente
+     * 
+     * @async
+     * @param {Object} navigation - Objeto de navegación de React Navigation
+     * @returns {Promise<Object>} Usuario autenticado de Firebase
+     * @throws {Error} Si el proceso de autenticación falla
+     */
     const signInWithGoogleExpo = async (navigation) => {
         try {
             setLoading(true);
@@ -59,7 +117,10 @@ export const useGoogleAuth = () => {
 
                 console.log('Autenticación exitosa en Firebase:', user.email);
 
-                // Verificar si el usuario es nuevo o existente
+                /**
+                 * Determina si el usuario es nuevo comparando timestamps
+                 * de creación e último inicio de sesión
+                 */
                 const isNewUser = user.metadata.creationTime === user.metadata.lastSignInTime;
 
                 if (isNewUser) {
@@ -97,10 +158,23 @@ export const useGoogleAuth = () => {
     };
 };
 
-// Configura GoogleSignin para Android y iOS (para builds nativas)
+/**
+ * Configura Google Sign-In para Builds Nativos
+ * 
+ * Inicializa y configura el servicio de Google Sign-In para aplicaciones
+ * compiladas nativamente (no Expo Go). Detecta automáticamente el entorno
+ * y omite la configuración si se ejecuta en Expo Go.
+ * 
+ * @async
+ * @function
+ * @returns {Promise<void>}
+ */
 export const configureGoogleSignIn = async () => {
     try {
-        // Verificamos si estamos en Expo Go
+        /**
+         * Detecta si la aplicación se ejecuta en Expo Go
+         * Expo Go requiere un método diferente de autenticación
+         */
         const isExpoGo = Platform.OS !== 'web' &&
             (Constants?.executionEnvironment === 'storeClient' ||
                 Constants?.executionEnvironment === 'standalone');
@@ -129,12 +203,33 @@ export const configureGoogleSignIn = async () => {
     }
 };
 
-// Función para iniciar sesión con Google usando la implementación nativa
+/**
+ * Inicia Sesión con Google (Build Nativo)
+ * 
+ * Implementa el flujo de autenticación con Google para aplicaciones
+ * compiladas nativamente usando @react-native-google-signin/google-signin.
+ * 
+ * Proceso:
+ * 1. Verifica disponibilidad de Google Play Services (Android)
+ * 2. Cierra cualquier sesión previa para estado limpio
+ * 3. Inicia el flujo de autenticación de Google
+ * 4. Obtiene el token de ID
+ * 5. Autentica en Firebase
+ * 6. Navega según el estado del usuario (nuevo/existente)
+ * 
+ * @async
+ * @param {Object} navigation - Objeto de navegación de React Navigation
+ * @returns {Promise<Object>} Usuario autenticado de Firebase
+ * @throws {Error} Si falla la autenticación
+ */
 export const signInWithGoogleNative = async (navigation) => {
     try {
         const { GoogleSignin } = require('@react-native-google-signin/google-signin');
 
-        // Asegúrate de que los servicios de Google Play estén disponibles (solo Android)
+        /**
+         * Verifica que Google Play Services esté disponible (solo Android)
+         * Muestra diálogo de actualización si es necesario
+         */
         if (Platform.OS === 'android') {
             await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
         }
@@ -165,7 +260,10 @@ export const signInWithGoogleNative = async (navigation) => {
 
         console.log('Usuario autenticado en Firebase:', user.email);
 
-        // Verificar si el usuario es nuevo o existente
+        /**
+         * Determina si es un usuario nuevo o existente
+         * para dirigirlo a la pantalla apropiada
+         */
         const isNewUser = user.metadata.creationTime === user.metadata.lastSignInTime;
 
         if (isNewUser) {
@@ -196,7 +294,16 @@ export const signInWithGoogleNative = async (navigation) => {
 // Asegurar compatibilidad con código existente
 export const signInWithGoogle = signInWithGoogleNative;
 
-// Función para cerrar sesión
+/**
+ * Cierra Sesión de Google
+ * 
+ * Cierra la sesión del usuario tanto en Google Sign-In como en Firebase.
+ * Revoca el acceso y limpia todas las credenciales almacenadas.
+ * 
+ * @async
+ * @function
+ * @returns {Promise<void>}
+ */
 export const signOutGoogle = async () => {
     try {
         if (Platform.OS !== 'web') {
@@ -218,7 +325,19 @@ export const signOutGoogle = async () => {
     }
 };
 
-// Función para registrar usuario
+/**
+ * Registra un Nuevo Usuario
+ * 
+ * Guarda los datos adicionales del usuario en la base de datos.
+ * Esta es una función placeholder que debe implementar la lógica
+ * de guardado en Firestore.
+ * 
+ * @param {string} uid - ID único del usuario en Firebase
+ * @param {string} email - Correo electrónico del usuario
+ * @param {Object} additionalData - Datos adicionales del usuario a guardar
+ * @returns {boolean} true si el registro fue exitoso
+ * @todo Implementar lógica completa de guardado en Firestore
+ */
 export const signUp = async (uid, email, additionalData) => {
     console.log('Registrando usuario con ID:', uid, 'Email:', email, 'Datos adicionales:', additionalData);
     return true; // Implementa tu lógica de guardado en Firestore aquí

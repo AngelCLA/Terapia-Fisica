@@ -23,13 +23,25 @@ import { getAuth } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 
-// Importar imágenes correctamente
+/**
+ * Asset Imports
+ * Imágenes utilizadas en la interfaz de usuario
+ */
 const ClipboardImage = require('../assets/clipboard.png');
 const AvatarMujerImage = require('../assets/AvatarMujer.png');
 const AvatarHombreImage = require('../assets/AvatarHombre.png');
 const BasculaImage = require('../assets/bascula.png');
 
-// Definir las etapas de vida con sus rangos de edad (fuera del componente para no recrearlas)
+/**
+ * Definición de Etapas de Vida
+ * Array constante que define las etapas de desarrollo del bebé.
+ * Se mantiene fuera del componente para evitar recreación en cada render.
+ * @constant {Array<Object>} etapasVida
+ * @property {string} id - Identificador único de la etapa
+ * @property {string} titulo - Nombre descriptivo de la etapa
+ * @property {string} rango - Rango de edad en meses
+ * @property {number} edadMedia - Edad representativa en meses
+ */
 const etapasVida = [
     { id: 'Etapa 1', titulo: 'Etapa 1', rango: '0-3 meses', edadMedia: 2 },
     { id: 'Etapa 2', titulo: 'Etapa 2', rango: '4-6 meses', edadMedia: 5 },
@@ -37,10 +49,25 @@ const etapasVida = [
     { id: 'Etapa 4', titulo: 'Etapa 4', rango: '10-12 meses', edadMedia: 11 }
 ];
 
+/**
+ * Pantalla de Datos Físicos
+ * 
+ * Componente que maneja el flujo de recopilación de datos físicos del bebé.
+ * Incluye múltiples vistas secuenciales para capturar:
+ * - Género del bebé
+ * - Edad (etapa de vida)
+ * - Peso
+ * - Estatura
+ * - Resumen y confirmación de datos
+ * 
+ * @component
+ * @returns {React.ReactElement} Componente de pantalla para captura de datos físicos
+ */
 const DatosFisicosScreen = () => {
     const navigation = useNavigation();
     const route = useRoute();
-    const { personalData } = route.params; // Recibir los datos personales
+    /** Datos personales recibidos desde la pantalla anterior */
+    const { personalData } = route.params;
 
     const [currentView, setCurrentView] = useState('Genero');
     const [formData, setFormData] = useState({
@@ -55,7 +82,13 @@ const DatosFisicosScreen = () => {
     const [selectedSecondPicker, setSelectedSecondPicker] = useState('0');
     const [etapaSeleccionada, setEtapaSeleccionada] = useState('0');
 
-    // Efecto para inicializar la etapa basada en la edad
+    /**
+     * Effect: Determinación Automática de Etapa
+     * 
+     * Calcula y establece la etapa de vida correspondiente basándose
+     * en la edad del bebé ingresada por el usuario.
+     * Se ejecuta cada vez que cambia el valor de edad en formData.
+     */
     useEffect(() => {
         if (formData.edad) {
             const edad = parseInt(formData.edad);
@@ -67,7 +100,14 @@ const DatosFisicosScreen = () => {
         }
     }, [formData.edad]);
 
-    // Lista de niveles de actividad física
+    /**
+     * Niveles de Actividad Física
+     * 
+     * Define los diferentes niveles de actividad que puede tener el usuario.
+     * Aunque actualmente no se usa en el flujo principal, se mantiene para
+     * futuras implementaciones.
+     * @constant {Array<Object>} activityLevels
+     */
     const activityLevels = [
         {
             id: 'sedentario',
@@ -101,7 +141,14 @@ const DatosFisicosScreen = () => {
         },
     ];
 
-    // Lista de padecimientos
+    /**
+     * Lista de Padecimientos
+     * 
+     * Catálogo de condiciones médicas disponibles para selección.
+     * Actualmente no se utiliza en el flujo principal pero se mantiene
+     * para posibles expansiones futuras del sistema.
+     * @constant {Array<Object>} items
+     */
     const items = [
         { id: 1, label: 'Padecimiento 1', image: ClipboardImage },
         { id: 2, label: 'Padecimiento 2', image: ClipboardImage },
@@ -115,19 +162,43 @@ const DatosFisicosScreen = () => {
         { id: 10, label: 'Padecimiento 10', image: ClipboardImage },
     ];
 
-    // Función para obtener el nombre del padecimiento según ID
+    /**
+     * Obtiene el Nombre del Padecimiento
+     * 
+     * Busca y retorna el nombre descriptivo de un padecimiento
+     * basándose en su ID.
+     * 
+     * @param {number} id - ID del padecimiento a buscar
+     * @returns {string} Nombre del padecimiento o 'No especificado'
+     */
     const getPadecimientoName = (id) => {
         const padecimiento = items.find(item => item.id === id);
         return padecimiento ? padecimiento.label : 'No especificado';
     };
 
-    // Función para obtener texto descriptivo del nivel de actividad
+    /**
+     * Obtiene el Texto del Nivel de Actividad
+     * 
+     * Retorna la descripción textual del nivel de actividad física
+     * basándose en su identificador.
+     * 
+     * @param {string} nivel - ID del nivel de actividad
+     * @returns {string} Descripción del nivel o 'No especificado'
+     */
     const getNivelActividadText = (nivel) => {
         const actividad = activityLevels.find(item => item.id === nivel);
         return actividad ? actividad.title : 'No especificado';
     };
 
-    // Función para formatear estatura
+    /**
+     * Formatea la Estatura
+     * 
+     * Convierte la estatura de centímetros a un formato legible
+     * en metros y centímetros (e.g., "1.75 m").
+     * 
+     * @param {string|number} estaturaCm - Estatura en centímetros
+     * @returns {string} Estatura formateada o 'No especificada'
+     */
     const formatEstatura = (estaturaCm) => {
         if (!estaturaCm) return 'No especificada';
         const cm = parseInt(estaturaCm, 10);
@@ -181,8 +252,23 @@ const DatosFisicosScreen = () => {
         </View>
     );
 
+    /**
+     * Renderiza Vista de Selección de Edad
+     * 
+     * Muestra las diferentes etapas de vida disponibles para que el usuario
+     * seleccione la etapa correspondiente a la edad del bebé.
+     * 
+     * @returns {React.ReactElement} Componente de selección de etapa
+     */
     const renderEdadView = () => {
-        // Manejar cambio de etapa
+        /**
+         * Maneja el cambio de etapa seleccionada
+         * 
+         * Actualiza la etapa y establece la edad media correspondiente
+         * en el estado del formulario.
+         * 
+         * @param {string} etapaId - ID de la etapa seleccionada
+         */
         const cambiarEtapa = (etapaId) => {
             setEtapaSeleccionada(etapaId);
 
@@ -242,6 +328,14 @@ const DatosFisicosScreen = () => {
         );
     };
 
+    /**
+     * Renderiza Vista de Ingreso de Peso
+     * 
+     * Muestra un campo de entrada numérico para que el usuario
+     * introduzca el peso del bebé en kilogramos.
+     * 
+     * @returns {React.ReactElement} Componente de entrada de peso
+     */
     const renderPesoView = () => (
         <>
             <Text style={styles.title}>¿Cuál es tu peso (kg)?</Text>
@@ -263,15 +357,35 @@ const DatosFisicosScreen = () => {
         </>
     );
 
+    /**
+     * Renderiza Vista de Selección de Estatura
+     * 
+     * Proporciona dos selectores (pickers) para que el usuario elija
+     * la estatura del bebé en metros y centímetros.
+     * La vista muestra la estatura seleccionada en formato legible.
+     * 
+     * @returns {React.ReactElement} Componente de selección de estatura
+     */
     const renderEstaturaView = () => {
-        const optionsPicker1 = Array.from({ length: 3 }, (_, i) => i.toString()); // 0, 1, 2 (metros)
-        const optionsPicker2 = Array.from({ length: 100 }, (_, i) => i.toString()); // 0, 1, ..., 99 (centímetros)
+        /** Opciones para el selector de metros (0-2) */
+        const optionsPicker1 = Array.from({ length: 3 }, (_, i) => i.toString());
+        /** Opciones para el selector de centímetros (0-99) */
+        const optionsPicker2 = Array.from({ length: 100 }, (_, i) => i.toString());
 
         // Obtener la altura actual para mostrarla visualmente
         const metros = parseInt(selectedFirstPicker, 10);
         const centimetros = parseInt(selectedSecondPicker, 10);
         const estaturaTotal = (metros * 100 + centimetros);
 
+        /**
+         * Actualiza el valor de estatura en el estado
+         * 
+         * Calcula la estatura total en centímetros a partir de los valores
+         * seleccionados en los pickers de metros y centímetros.
+         * 
+         * @param {string} picker1Value - Valor del selector de metros
+         * @param {string} picker2Value - Valor del selector de centímetros
+         */
         const updateEstatura = (picker1Value, picker2Value) => {
             console.log("Valores seleccionados:", picker1Value, picker2Value);
 
@@ -331,7 +445,16 @@ const DatosFisicosScreen = () => {
         );
     };
 
-    // Esta vista se mantiene pero no se usa en el flujo actual
+    /**
+     * Renderiza Vista de Selección de Patología
+     * 
+     * Muestra una lista de padecimientos disponibles para selección.
+     * NOTA: Esta vista se mantiene en el código pero actualmente no se utiliza
+     * en el flujo principal de la aplicación.
+     * 
+     * @deprecated Actualmente no está en uso en el flujo principal
+     * @returns {React.ReactElement} Componente de selección de patología
+     */
     const renderPatologiaView = () => (
         <View style={[styles.containerPatologias]}>
             <Text style={styles.title}>
@@ -367,7 +490,16 @@ const DatosFisicosScreen = () => {
         </View>
     );
 
-    // Esta vista se mantiene pero no se usa en el flujo actual
+    /**
+     * Renderiza Vista de Selección de Nivel de Actividad
+     * 
+     * Permite al usuario seleccionar su nivel de actividad física diaria.
+     * NOTA: Esta vista se mantiene en el código pero actualmente no se utiliza
+     * en el flujo principal de la aplicación.
+     * 
+     * @deprecated Actualmente no está en uso en el flujo principal
+     * @returns {React.ReactElement} Componente de selección de nivel de actividad
+     */
     const renderActividadView = () => (
         <View style={styles.containerActividad}>
             <Text style={styles.title}>¿Cuál es tu nivel de actividad física?</Text>
@@ -409,9 +541,17 @@ const DatosFisicosScreen = () => {
         </View>
     );
 
-    // Nueva vista: Resumen de todos los datos
+    /**
+     * Renderiza Vista de Resumen de Datos
+     * 
+     * Muestra un resumen completo de todos los datos personales y físicos
+     * capturados durante el proceso de registro. Permite al usuario revisar
+     * y editar la información antes de guardarla.
+     * 
+     * @returns {React.ReactElement} Componente de resumen y confirmación
+     */
     const renderResumenView = () => {
-        // Combinar datos personales y físicos
+        /** Combina datos personales y físicos en un solo objeto */
         const allData = {
             ...personalData, // Datos personales
             ...formData,     // Datos físicos
@@ -515,6 +655,15 @@ const DatosFisicosScreen = () => {
         );
     };
 
+    /**
+     * Maneja la Navegación entre Vistas
+     * 
+     * Controla el flujo de navegación entre las diferentes vistas del formulario,
+     * validando los datos ingresados antes de avanzar a la siguiente vista.
+     * El flujo actual es: Género → Edad → Peso → Estatura → Resumen
+     * 
+     * @function
+     */
     const handleNext = () => {
         switch (currentView) {
             case 'Genero':
@@ -542,10 +691,10 @@ const DatosFisicosScreen = () => {
                 if (!formData.estatura) {
                     alert('Por favor, indica tu estatura antes de continuar.');
                 } else {
-                    // Cambiamos el flujo para ir directamente al resumen, saltando Patologia y Actividad
+                    // Avanzar al resumen, omitiendo las vistas de Patología y Actividad
                     setCurrentView('Resumen');
 
-                    // Establecemos valores por defecto para los campos que estamos saltando
+                    // Establecer valores por defecto para los campos opcionales omitidos
                     setFormData(prev => ({
                         ...prev,
                         padecimiento: '',
@@ -573,21 +722,31 @@ const DatosFisicosScreen = () => {
         }
     };
 
+    /**
+     * Guarda los Datos en Firestore
+     * 
+     * Combina los datos personales y físicos del usuario y los guarda
+     * en la base de datos de Firestore. Tras guardar exitosamente,
+     * navega a la pantalla principal (Home).
+     * 
+     * @async
+     * @function
+     */
     const handleSaveData = async () => {
         const auth = getAuth();
         const user = auth.currentUser;
 
         if (user) {
             try {
-                // Combinar datos personales y físicos
+                /** Combina datos personales y físicos del usuario */
                 const userData = {
-                    ...personalData, // Datos personales
-                    ...formData,     // Datos físicos
+                    ...personalData,
+                    ...formData,
                 };
 
-                console.log("Datos a guardar:", userData); // Depuración
+                console.log("Datos a guardar:", userData);
 
-                // Guardar todos los datos en Firestore
+                /** Guarda todos los datos en la colección 'users' de Firestore */
                 await setDoc(doc(db, 'users', user.uid), userData);
 
                 console.log('Datos guardados correctamente en Firestore.');

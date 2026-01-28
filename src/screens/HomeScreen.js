@@ -26,10 +26,27 @@ import {getDoc, doc} from 'firebase/firestore';
 import {getAuth} from 'firebase/auth';
 import {db} from '../../firebaseConfig';
 
-// Definir el Tab.Navigator y las pantallas
+/**
+ * Navegador de Pestañas Inferiores
+ * Proporciona navegación entre las principales pantallas de la aplicación.
+ */
 const Tab = createBottomTabNavigator();
 
-// Definir las etapas de vida disponibles
+/**
+ * Etapas de Vida del Bebé
+ * 
+ * Define las etapas de desarrollo disponibles en la aplicación.
+ * Cada etapa incluye información de rango de edad, colores temáticos
+ * y edad media representativa.
+ * 
+ * @constant {Array<Object>} etapasVida
+ * @property {string} id - Identificador único de la etapa
+ * @property {string} titulo - Nombre de la etapa
+ * @property {string} rango - Rango de edad en meses
+ * @property {number} edadMedia - Edad representativa en meses
+ * @property {string} color - Color principal de la etapa (gradiente inicio)
+ * @property {string} colorEnd - Color final del gradiente
+ */
 const etapasVida = [
     { id: 'Etapa 1', titulo: 'Etapa 1', rango: '0-3 meses', edadMedia: 2, color: '#FF6B8B', colorEnd: '#FF9F9F' },
     { id: 'Etapa 2', titulo: 'Etapa 2', rango: '4-6 meses', edadMedia: 5, color: '#49A7FF', colorEnd: '#6DBDFF' },
@@ -37,6 +54,20 @@ const etapasVida = [
     { id: 'Etapa 4', titulo: 'Etapa 4', rango: '10-12 meses', edadMedia: 11, color: '#FFA94D', colorEnd: '#FFD59F' }
 ];
 
+/**
+ * Pantalla Principal (Home)
+ * 
+ * Componente principal que muestra:
+ * - Información de la etapa actual del bebé
+ * - Acceso rápido a ejercicios, progreso y datos
+ * - Videos recomendados según la etapa
+ * - Navegación a otras etapas de desarrollo
+ * 
+ * @component
+ * @param {Object} props - Propiedades del componente
+ * @param {Object} props.navigation - Objeto de navegación de React Navigation
+ * @returns {React.ReactElement} Pantalla principal de la aplicación
+ */
 const HomeScreen = ({navigation}) => {
     const insets = useSafeAreaInsets();
     const [userData, setUserData] = useState(null);
@@ -46,6 +77,13 @@ const HomeScreen = ({navigation}) => {
     const [videosLoading, setVideosLoading] = useState(true);
     const [currentEtapa, setCurrentEtapa] = useState(null);
 
+    /**
+     * Effect: Carga de Datos del Usuario y Videos
+     * 
+     * Obtiene los datos del usuario desde Firestore y determina la etapa
+     * de desarrollo correspondiente basándose en la edad del bebé.
+     * También inicia la carga de videos recomendados.
+     */
     useEffect(() => {
         const fetchData = async () => {
             const auth = getAuth();
@@ -59,7 +97,10 @@ const HomeScreen = ({navigation}) => {
                         const userDocData = userDoc.data();
                         setUserData(userDocData);
 
-                        // Determinar la etapa actual basada en la edad guardada en el perfil
+                        /**
+                         * Determina la etapa actual basada en la edad del bebé
+                         * La edad se almacena en meses en el perfil del usuario
+                         */
                         const edadMeses = parseInt(userDocData.edad || '0');
                         let etapaId = 'Etapa 1'; // Valor por defecto
 
@@ -92,12 +133,27 @@ const HomeScreen = ({navigation}) => {
         loadFeaturedVideos();
     }, []);
 
-    // Función para obtener la etapa actual completa
+    /**
+     * Obtiene los Datos de la Etapa Actual
+     * 
+     * Retorna el objeto completo de la etapa actual del usuario.
+     * Si no hay etapa seleccionada, retorna la primera etapa por defecto.
+     * 
+     * @returns {Object} Datos de la etapa actual
+     */
     const getCurrentEtapaData = () => {
         return etapasVida.find(etapa => etapa.id === currentEtapa) || etapasVida[0];
     };
 
-    // Cargar videos destacados para la pantalla de inicio
+    /**
+     * Carga Videos Destacados
+     * 
+     * Obtiene videos recomendados del servicio de YouTube para mostrar
+     * en la pantalla principal. Implementa caché para optimizar el rendimiento.
+     * 
+     * @async
+     * @function
+     */
     const loadFeaturedVideos = async () => {
         setVideosLoading(true);
         try {
@@ -116,7 +172,15 @@ const HomeScreen = ({navigation}) => {
         }
     };
 
-    // Navegación a ejercicios específicos por etapa
+    /**
+     * Navega a los Ejercicios de la Etapa
+     * 
+     * Redirige al usuario a la pantalla de ejercicios específicos
+     * para la etapa actual del bebé. Si no hay etapa seleccionada,
+     * muestra la pantalla de selección de etapas.
+     * 
+     * @function
+     */
     const navigateToEtapaExercises = () => {
         if (currentEtapa) {
             const etapaData = getCurrentEtapaData();
@@ -141,7 +205,7 @@ const HomeScreen = ({navigation}) => {
         );
     }
 
-    // Obtener datos de la etapa actual
+    /** Obtiene los datos completos de la etapa actual del usuario */
     const etapaActual = getCurrentEtapaData();
 
     return (

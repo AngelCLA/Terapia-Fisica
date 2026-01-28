@@ -24,6 +24,22 @@ import * as WebBrowser from 'expo-web-browser';
 
 WebBrowser.maybeCompleteAuthSession();
 
+/**
+ * Pantalla de Inicio de Sesión
+ * 
+ * Componente que maneja la autenticación de usuarios mediante:
+ * - Correo electrónico y contraseña
+ * - Google Sign-In (compatible con Expo Go y builds nativas)
+ * - Facebook (en desarrollo)
+ * 
+ * Gestiona el flujo de verificación de email y redirige al usuario
+ * según el estado de su cuenta.
+ * 
+ * @component
+ * @param {Object} props - Propiedades del componente
+ * @param {Object} props.navigation - Objeto de navegación de React Navigation
+ * @returns {React.ReactElement} Componente de pantalla de inicio de sesión
+ */
 const LoginScreen = ({ navigation }) => {
 
     const [phone, setPhone] = useState('');
@@ -32,19 +48,30 @@ const LoginScreen = ({ navigation }) => {
     const [loading, setLoading] = useState(false);
     const [googleLoading, setGoogleLoading] = useState(false);
 
-    // Initialize Firebase
+    /** Inicializa la instancia de Firebase */
     const app = initializeApp(firebaseConfig);
+    /** Servicio de autenticación de Firebase */
     const auth = getAuth(app);
 
-    // Determinar si estamos en Expo Go
-    // El valor 'storeClient' significa que estamos ejecutando dentro de Expo Go
+    /**
+     * Detección de Entorno de Ejecución
+     * 
+     * Determina si la aplicación se ejecuta en Expo Go o en un build nativo.
+     * Esto es necesario para seleccionar el método correcto de autenticación con Google.
+     * @type {boolean}
+     */
     const isExpoGo = Constants.executionEnvironment === 'storeClient';
     console.log('Entorno de ejecución:', Constants.executionEnvironment, 'isExpoGo:', isExpoGo);
 
-    // Usar nuestro hook personalizado para Google Auth
+    /** Hook personalizado para autenticación con Google (compatible con Expo Go) */
     const googleAuth = useGoogleAuth();
 
-    // Configura Google Sign-In al cargar el componente
+    /**
+     * Effect: Configuración de Google Sign-In
+     * 
+     * Inicializa la configuración necesaria para la autenticación con Google
+     * al montar el componente.
+     */
     useEffect(() => {
         const setupGoogleAuth = async () => {
             await configureGoogleSignIn();
@@ -53,6 +80,15 @@ const LoginScreen = ({ navigation }) => {
         setupGoogleAuth();
     }, []);
 
+    /**
+     * Crea una Nueva Cuenta de Usuario
+     * 
+     * NOTA: Esta función se mantiene para propósitos de desarrollo/debug
+     * pero no se utiliza en el flujo principal de la aplicación.
+     * 
+     * @async
+     * @deprecated No se utiliza en el flujo actual
+     */
     const handleCreateAccount = async () => {
         createUserWithEmailAndPassword(auth, email, password)
             .then((userCredential) => {
@@ -65,6 +101,16 @@ const LoginScreen = ({ navigation }) => {
             });
     }
 
+    /**
+     * Maneja el Inicio de Sesión con Email
+     * 
+     * Autentica al usuario con correo electrónico y contraseña.
+     * Verifica si el email está confirmado antes de permitir el acceso.
+     * Si el email no está verificado, redirige a la pantalla de verificación.
+     * 
+     * @async
+     * @function
+     */
     const handleSignIn = async () => {
         if (!email || !password) {
             Alert.alert('Error', 'Por favor ingresa tu correo y contraseña');
@@ -79,9 +125,9 @@ const LoginScreen = ({ navigation }) => {
                 const user = userCredential.user;
                 console.log(user.email);
 
-                // Check if email is verified
+                /** Verifica si el email del usuario ha sido confirmado */
                 if (!user.emailVerified) {
-                    // Email not verified - redirect to verification screen
+                    /** Email no verificado - redirigir a pantalla de verificación */
                     Alert.alert(
                         'Cuenta no verificada',
                         'Tu cuenta no ha sido verificada. Necesitas completar el proceso de verificación para continuar.',
@@ -93,7 +139,7 @@ const LoginScreen = ({ navigation }) => {
                         ]
                     );
                 } else {
-                    // Email is verified - navigate to home
+                    /** Email verificado - navegar a la pantalla principal */
                     navigation.navigate('Home');
                 }
                 setLoading(false);
@@ -129,20 +175,29 @@ const LoginScreen = ({ navigation }) => {
             });
     }
 
+    /**
+     * Maneja el Inicio de Sesión con Google
+     * 
+     * Gestiona la autenticación mediante Google Sign-In, adaptando el método
+     * según el entorno de ejecución (Expo Go vs. build nativo).
+     * 
+     * @async
+     * @function
+     */
     const handleGoogleSignIn = async () => {
         setGoogleLoading(true);
         try {
             console.log('Iniciando autenticación de Google en:', isExpoGo ? 'Expo Go' : 'Entorno nativo');
 
             if (isExpoGo) {
-                // En Expo Go, usamos el método del hook
+                /** En Expo Go, utiliza el método del hook personalizado */
                 console.log('Usando signInWithGoogleExpo');
                 if (!googleAuth || !googleAuth.signInWithGoogleExpo) {
                     throw new Error('Método de autenticación no disponible en Expo Go');
                 }
                 await googleAuth.signInWithGoogleExpo(navigation);
             } else {
-                // En entorno nativo, usamos la función tradicional
+                /** En build nativo, utiliza el método tradicional de Google Sign-In */
                 console.log('Usando signInWithGoogleNative');
                 await signInWithGoogleNative(navigation);
             }
